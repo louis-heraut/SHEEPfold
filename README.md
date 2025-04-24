@@ -11,7 +11,7 @@ A set of graphical representation functions useful in hydro-climatology.
 This project was carried out for National Research Institute for Agriculture, Food and the Environment (Institut National de Recherche pour l’Agriculture, l’Alimentation et l’Environnement, [INRAE](https://agriculture.gouv.fr/inrae-linstitut-national-de-recherche-pour-lagriculture-lalimentation-et-lenvironnement) in french).
 
 
-### Installation
+## Installation
 
 For latest development version
 
@@ -19,7 +19,7 @@ For latest development version
 git clone https://github.com/super-lou/SHEEPfold.git
 ```
 
-### Documentation
+## Documentation
 
 
 
@@ -27,81 +27,29 @@ git clone https://github.com/super-lou/SHEEPfold.git
 
 
 ### FAQ
+📬 — **I would like an upgrade / I have a question / Need to reach me**  
+Feel free to [open an issue](https://github.com/super-lou/SHEEPfold/issues) ! I’m actively maintaining this project, so I’ll do my best to respond quickly.  
+I’m also reachable on my institutional INRAE [email](mailto:louis.heraut@inrae.fr?subject=%5BSHEEPfold%5D) for more in-depth discussions.
 
-*I have a question.*
+🛠️ — **I found a bug**  
+- *Good Solution* : Search the existing issue list, and if no one has reported it, create a new issue !  
+- *Better Solution* : Along with the issue submission, provide a minimal reproducible code sample.  
+- *Best Solution* : Fix the issue and submit a pull request. This is the fastest way to get a bug fixed.
 
--   **Solution**: Search existing issue list and if no one has a similar question create a new issue.
+🚀 — **Want to contribute ?**  
+If you don't know where to start, [open an issue](https://github.com/super-lou/SHEEPfold/issues).
 
-*I found a bug.*
+If you want to try by yourself, why not start by also [opening an issue](https://github.com/super-lou/SHEEPfold/issues) to let me know you're working on something ? Then:
 
--   **Good Solution**: Search existing issue list and if no one has reported it create a new issue.
--   **Better Solution**: Along with issue submission provide a minimal reproducible code sample.
--   **Best Solution**: Fix the issue and submit a pull request. This is the fastest way to get a bug fixed.
+- Fork this repository  
+- Clone your fork locally and make changes (or even better, create a new branch for your modifications)
+- Push to your fork and verify everything works as expected
+- Open a Pull Request on GitHub and describe what you did and why
+- Wait for review
+- For future development, keep your fork updated using the GitHub “Sync fork” functionality or by pulling changes from the original repo (or even via remote upstream if you're comfortable with Git). Otherwise, feel free to delete your fork to keep things tidy ! 
+
+If we’re connected through work, why not reach out via email to see if we can collaborate more closely on this repo by adding you as a collaborator !
 
 
-### Code of Conduct
-
+## Code of Conduct
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
-
-
-
-
-
-
-README
-	Ash is a toolbox of R code that perfoms a stationarity
-	analysis of the low water regime which in french is "analyse
-	de stationnarité du régime des étiages". In this
-	configuration, this analysis is centered on the Adour-Garonne
-	hydrological basin which is located in the south-west part of
-	France.
-
-	The plan of a first use is developed below :
-
-	1. In order to manage to use this code, you firstly need to
-	install R (more info here : https://www.r-project.org) but
-	also for R studio if you want a user-friendly text editor
-	(more info here : https://www.rstudio.com/).
-
-	2. Then if you fill confident you can directly jump to part 3.
-	Otherwise, open the 'script_install.R' file. This file guide
-	you throught the different package you need to install to make
-	this toolbox functionnal. You can run this entire code
-	(RStudio : Ctrl+Alt+R).
-
-	3. Open the 'main.R' file. This script is your script of
-	interaction with the rest of the code. You have to put here
-	your settings and execute the entire file when you are ready.
-	(RStudio : Ctrl+Alt+R) It is possible that some packages will
-	be missing. Take the time to install them before re-execute
-	the 'main.R' file.
-
-	4. Figures will be stored in the 'figures' repository and
-	results in the 'results' repository. All the rest of the code
-	is located in the 'Rcode' repository and is divided between
-	'processing' and 'plotting'. The 'data' repository is where
-	you can add, remove or modify data you want to analyse and the
-	'resources' repository is for fixed 'resources' that the code
-	needed.
-
-
-CONTACT
-	If you have problems, questions, ideas or suggestions, please
-	contact us. Contact first Louis Héraut who is the main
-	developer. If it is not possible, Éric Sauquet is the main
-	referent at INRAE to contact :
-
-
-GIT
-	To download the very latest source off the GIT server do this:
-	git clone https://gitlab.irstea.fr/louis.heraut/ash.git
-
-	(you will get a directory named ash created, filled with the
-	source code)
-
-
-NOTICE
-	Feel free to use all the code or only some parts but it would
-	be nice to at least mention the name of the authors.
-	
-	Ash stand for "Analyse de Stationnarité Hydrologique".
