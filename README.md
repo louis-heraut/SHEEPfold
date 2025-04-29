@@ -2,7 +2,7 @@
 
 <!-- badges: start -->
 [![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html)
-![](https://img.shields.io/github/last-commit/louis-heraut/ashes)
+![](https://img.shields.io/github/last-commit/louis-heraut/SHEEPfold)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md) 
 <!-- badges: end -->
 
