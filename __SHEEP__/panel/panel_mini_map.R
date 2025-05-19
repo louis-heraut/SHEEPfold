@@ -28,6 +28,7 @@
 panel_mini_map = function (meta, Shapefiles,
                            codeLight=NULL,
                            regionLight=NULL,
+                           secteurLight=NULL,
                            regimeCodeLight=NULL,
                            coucheLight=NULL,
                            zoom=NULL,
@@ -46,6 +47,7 @@ panel_mini_map = function (meta, Shapefiles,
     # Extract shapefiles
     france = Shapefiles$france
     bassinHydro = Shapefiles$bassinHydro
+    secteurHydro = Shapefiles$secteurHydro
     regionHydro = Shapefiles$regionHydro
     entiteHydro = Shapefiles$entiteHydro
     entitePiezo = Shapefiles$entitePiezo
@@ -194,6 +196,20 @@ panel_mini_map = function (meta, Shapefiles,
                     fill=NA,
                     linewidth=0.5)
     }
+
+
+    if (!is.null(secteurLight)) {
+        map = map +
+            geom_sf(data=secteurLight[secteurLight$CdRegionHy == regionLight,],
+                    color="white",
+                    fill=NA,
+                    linewidth=1.1) +
+            geom_sf(data=secteurLight[secteurLight$CdRegionHy == regionLight,],
+                    color=INRAEdarkcyan,
+                    fill=NA,
+                    linewidth=0.5)
+    }
+    
 
     if (!is.null(coucheLight)) {
         map = map +

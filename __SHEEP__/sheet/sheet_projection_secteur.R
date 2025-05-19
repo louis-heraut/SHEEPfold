@@ -26,10 +26,7 @@ sheet_projection_secteur = function (meta,
                                      metaEX_serie,
                                      dataEX_criteria,
                                      metaEX_criteria,
-                                     Colors,
-                                     Colors_light,
-                                     Names,
-                                     historical=c("1976-01-01", "2005-08-31"),
+                                     Colors_GWL,
                                      delta_prob=0, 
                                      icon_path="",
                                      logo_info="",
@@ -48,14 +45,14 @@ sheet_projection_secteur = function (meta,
     hydroMap_height = 6
     hydroQM_height = 6
     foot_height = 1
-    hydro_table_height = height - info_height - climate_height - hydroMap_height - hydroQM_height - foot_height
+    hydroTable_height = height - info_height - climate_height - hydroMap_height - hydroQM_height - foot_height
     
     plan = matrix(c(
         "info",
         "climate", 
         "hydroMap",
         "hydroQM",
-        "hydro_table",
+        "hydroTable",
         "foot"
     ), ncol=1, byrow=TRUE)
 
@@ -99,94 +96,130 @@ sheet_projection_secteur = function (meta,
 
 ### Info ________________________________________________________
         info_plan = matrix(c(
-            "info_map", "info_text", "info_logo"
-        ), nrow=1, byrow=TRUE)
+            "map", "title", "logo",
+            "map", "legend", "logo"
+        ), ncol=3, byrow=TRUE)
 
+        info_title_height = 1
+        info_legend_height = 1
+        
         info_map_width = 1
-        info_text_width = 2
+        info_title_width = 2
         info_logo_width = 1
 
         info_herd = bring_grass(verbose=verbose)
         info_herd = plan_of_herd(info_herd, info_plan,
                                  verbose=verbose)
+
+        xlim = c(90000, 1250000)
+        ylim = c(6040000, 7120000)
+
+        margin_map = margin(t=0, r=0, b=0, l=0, unit="mm")
         
+        echelle = c(0, 250)
+        x_echelle_pct = 2
+        y_echelle_pct = 3
+        echelle_size = 2
+        echelle_km_size = 1.9
+        echelle_tick_height = 3
+        
+        cf = coord_fixed()
+        cf$default = TRUE
+        map = ggplot() + theme_void_Lato() + cf +
+            theme(plot.margin=margin_map) +
+            geom_sf(data=Shapefiles$france,
+                    color=NA,
+                    fill=IPCCgrey97) +
+            geom_sf(data=Shapefiles$river,
+                    color="white",
+                    alpha=1,
+                    fill=NA,
+                    linewidth=0.7,
+                    na.rm=TRUE) +
+            geom_sf(data=Shapefiles$river,
+                    color=INRAElightcyan,
+                    alpha=1,
+                    fill=NA,
+                    linewidth=0.35,
+                    na.rm=TRUE) +
+            geom_sf(data=Shapefiles$bassinHydro,
+                    color=IPCCgrey85,
+                    fill=NA,
+                    size=0.25) +
+            geom_sf(data=Shapefiles$france,
+                    color=IPCCgrey40,
+                    fill=NA,
+                    linewidth=0.35)
+        
+        xmin = gpct(x_echelle_pct, xlim, shift=TRUE)
+        xint = echelle*1E3
+        ymin = gpct(y_echelle_pct, ylim, shift=TRUE)
+        ymin_km = gpct(max(c(y_echelle_pct-5, 0)), ylim, shift=TRUE)
+        ymax = ymin + gpct(echelle_tick_height, ylim)
+
+        map = map +
+            geom_line(aes(x=c(xmin, max(xint)+xmin),
+                          y=c(ymin, ymin)),
+                      color=IPCCgrey40, size=0.2) +
+            annotate("text",
+                     x=max(xint)+xmin+gpct(1, xlim), y=ymin_km,
+                     vjust=0, hjust=0, label="km",
+                     family="Lato",
+                     color=IPCCgrey40, size=echelle_km_size)
+
+        for (x in xint) {
+            map = map +
+                annotate("segment",
+                         x=x+xmin, xend=x+xmin, y=ymin, yend=ymax,
+                         color=IPCCgrey40, size=0.2) +
+                annotate("text",
+                         x=x+xmin, y=ymax+gpct(0.5, ylim),
+                         vjust=0, hjust=0.5, label=x/1E3,
+                         family="Lato",
+                         color=IPCCgrey40, size=echelle_size)
+        }
+
+        secteurLight_shp = Shapefiles$secteurHydro[Shapefiles$secteurHydro$CdSecteurH == sh,]
+
+        map = map +
+            geom_sf(data=secteurLight_shp,
+                    color="white",
+                    fill=NA,
+                    linewidth=1.1) +
+            geom_sf(data=secteurLight_shp,
+                    color=INRAEdarkcyan,
+                    fill=NA,
+                    linewidth=0.5)
+
+        map = map +
+            coord_sf(xlim=xlim, ylim=ylim,
+                     expand=FALSE)
+
         info_herd = add_sheep(info_herd,
-                              sheep=contour(),
-                              id="info_map",
+                              sheep=map,
+                              id="map",
                               height=info_height,
                               width=info_map_width,
                               verbose=verbose)
 
 #### Info text _______________________________________________________
-        info_text_plan = matrix(c(
-            "info_text_title",
-            "info_text_legend"
-        ), ncol=1, byrow=TRUE)
-        
-        info_text_title_height = 1
-        info_text_legend_height = 1
-        
-        info_text_herd = bring_grass(verbose=verbose)
-        info_text_herd = plan_of_herd(info_text_herd, info_text_plan,
-                                      verbose=verbose)
-        
-        info_text_herd = add_sheep(info_text_herd,
-                                   sheep=contour(),
-                                   id="info_text_title",
-                                   height=info_text_title_height,
-                                   verbose=verbose)
-        
-        info_text_herd = add_sheep(info_text_herd,
-                                   sheep=contour(),
-                                   id="info_text_legend",
-                                   height=info_text_legend_height,
-                                   verbose=verbose)
-        
         info_herd = add_sheep(info_herd,
-                              sheep=info_text_herd,
-                              id="info_text",
-                              height=info_height,
-                              width=info_text_width,
+                              sheep=contour(),
+                              id="title",
+                              height=info_title_height,
+                              width=info_title_width,
                               verbose=verbose)
 
-#### Info logo _______________________________________________________
-        info_logo_plan = matrix(c(
-            "info_logo_Explore2",
-            "info_logo_TRACC",
-            "info_logo_GWL"
-        ), ncol=1, byrow=TRUE)
-
-        info_logo_Explore2_height = 1
-        info_logo_TRACC_height = 1
-        info_logo_GWL_height = 1
-        
-        info_logo_herd = bring_grass(verbose=verbose)
-        info_logo_herd = plan_of_herd(info_logo_herd, info_logo_plan,
-                                      verbose=verbose)
-        
-        info_logo_herd = add_sheep(info_logo_herd,
-                                   sheep=contour(),
-                                   id="info_logo_Explore2",
-                                   height=info_logo_Explore2_height,
-                                   verbose=verbose)
-        
-        info_logo_herd = add_sheep(info_logo_herd,
-                                   sheep=contour(),
-                                   id="info_logo_TRACC",
-                                   height=info_logo_TRACC_height,
-                                   verbose=verbose)
-        
-        info_logo_herd = add_sheep(info_logo_herd,
-                                   sheep=contour(),
-                                   id="info_logo_GWL",
-                                   height=info_logo_GWL_height,
-                                   verbose=verbose)
-
-
         info_herd = add_sheep(info_herd,
-                              sheep=info_logo_herd,
-                              id="info_logo",
-                              height=info_height,
+                              sheep=contour(),
+                              id="legend",
+                              height=info_legend_height,
+                              verbose=verbose)
+        
+#### Info logo _______________________________________________________
+        info_herd = add_sheep(info_herd,
+                              sheep=contour(),
+                              id="logo",
                               width=info_logo_width,
                               verbose=verbose)
 
@@ -409,15 +442,15 @@ sheet_projection_secteur = function (meta,
 
 ### Hydro QM _________________________________________________________
         hydroQM_plan = matrix(c(
-            "title",      "title",          "title",          "title",
-            "void",       "river_name_1",   "river_name_2",   "river_name_3", 
-            "ref_info",   "rivier_ref_1",   "rivier_ref_2",   "rivier_ref_3",   
-            "delta_info", "rivier_delta_1", "rivier_delta_2", "rivier_delta_3"
+            "title",      "title",         "title",         "title",
+            "void",       "river_name_1",  "river_name_2",  "river_name_3", 
+            "ref_info",   "river_ref_1",   "river_ref_2",   "river_ref_3",   
+            "delta_info", "river_delta_1", "river_delta_2", "river_delta_3"
         ), ncol=4, byrow=TRUE)
 
 
-        hydroQM_title_height = 0.1
-        hydroQM_river_name_height = 0.1
+        hydroQM_title_height = 0.15
+        hydroQM_river_name_height = 0.2
         hydroQM_river_graph_height = 1
         
         hydroQM_river_width = 1
@@ -484,10 +517,34 @@ sheet_projection_secteur = function (meta,
                          verbose=verbose)
 
 ### Hydro table ______________________________________________________
+        hydroTable_plan = matrix(c(
+            "title",
+            "content"
+        ), ncol=1, byrow=TRUE)
+
+        hydroTable_title_height = 0.2
+        hydroTable_content_height = 1
+        
+        hydroTable_herd = bring_grass(verbose=verbose)
+        hydroTable_herd = plan_of_herd(hydroTable_herd, hydroTable_plan,
+                                     verbose=verbose)
+
+        hydroTable_herd = add_sheep(hydroTable_herd,
+                                    sheep=contour(),
+                                    id="title",
+                                    height=hydroTable_title_height,
+                                    verbose=verbose)
+        
+        hydroTable_herd = add_sheep(hydroTable_herd,
+                                    sheep=contour(),
+                                    id="content",
+                                    height=hydroTable_content_height,
+                                    verbose=verbose)
+
         herd = add_sheep(herd,
-                         sheep=contour(),
-                         id="hydro_table",
-                         height=hydro_table_height,
+                         sheep=hydroTable_herd,
+                         id="hydroTable",
+                         height=hydroTable_height,
                          width=width,
                          verbose=verbose)
 
