@@ -60,9 +60,9 @@ sheet_projection_secteur = function (meta,
 
     is_numeric = names(dataEX_criteria)[sapply(dataEX_criteria, is.numeric)]
     
-    dataEX_criteria_prob =
+    dataEX_criteria_stat =
         dplyr::summarise(dplyr::group_by(dataEX_criteria,
-                                         SH),
+                                         SH, GWL),
                          dplyr::across(is_numeric,
                                        ~quantile(.x, delta_prob,
                                                  na.rm=TRUE),
@@ -98,9 +98,15 @@ sheet_projection_secteur = function (meta,
 
 
         for (j in 1:nWL) {
+            id_letter = 1
+            
             wl = WL[[j]]
             print(paste0(j, "/", nWL, " so ", round(j/nWL*100, 1), "% done -> ", wl["RWL"]))
+
             
+            dataEX_criteria_sl_wl = dplyr::filter(dataEX_criteria, SH==sh, GWL==wl["GWLclean"])
+            dataEX_criteria_stat_sl_wl = dplyr::filter(dataEX_criteria_stat, SH==sh, GWL==wl["GWLclean"])
+    
             
             ## PAGE _________________________________________________________
             herd = bring_grass(verbose=verbose)
@@ -127,7 +133,7 @@ sheet_projection_secteur = function (meta,
             xlim = c(90000, 1250000)
             ylim = c(6040000, 7120000)
 
-            margin_map = margin(t=0, r=0, b=0, l=0, unit="mm")
+            margin_map = margin(t=0, r=0, b=2, l=0, unit="mm")
             
             echelle = c(0, 100, 250)
             x_echelle_pct = 2
@@ -204,7 +210,7 @@ sheet_projection_secteur = function (meta,
                         fill=NA,
                         linewidth=1.1) +
                 geom_sf(data=secteurHydro_shp,
-                        color=TRACCorange,
+                        color=wl["color"],
                         fill=NA,
                         linewidth=0.5)
 
@@ -219,7 +225,6 @@ sheet_projection_secteur = function (meta,
                                   verbose=verbose)
 
             #### Info text _______________________________________________________
-
             dy_newline = 0.2
             dy_region = 0.25
             dy_basin = 0.13
@@ -351,7 +356,7 @@ sheet_projection_secteur = function (meta,
 
             logo_Explore2_height = 1
             logo_TRACC_height = 1
-            logo_GWL_height = 1.2
+            logo_RWL_height = 1.2
             
             logo_herd = bring_grass(verbose=verbose)
             logo_herd = plan_of_herd(logo_herd, logo_plan,
@@ -377,10 +382,10 @@ sheet_projection_secteur = function (meta,
                                   height=logo_TRACC_height,
                                   verbose=verbose)
 
-            if (wl["RWLclean"] == "4") {
+            if (wl["RWLclean"] == "RWL-40") {
                 shift_C = 0.6
                 dx_shift = 0
-            } else if (wl["RWLclean"] == "27") {
+            } else if (wl["RWLclean"] == "RWL-27") {
                 shift_C = 1.1
                 dx_shift = 0.2
             }
@@ -416,7 +421,7 @@ sheet_projection_secteur = function (meta,
             logo_herd = add_sheep(logo_herd,
                                   sheep=RWL,
                                   id="RWL",
-                                  height=logo_GWL_height,
+                                  height=logo_RWL_height,
                                   verbose=verbose)
             
             info_herd = add_sheep(info_herd,
@@ -435,82 +440,276 @@ sheet_projection_secteur = function (meta,
                              verbose=verbose)
 
 
-            ### Climate __________________________________________________________
+### Climate __________________________________________________________
             climate_plan = matrix(c(
+                "title", "title", 
                 "climate_delta", "climate_table"
             ), ncol=2, byrow=TRUE)
             
             climate_herd = bring_grass(verbose=verbose)
             climate_herd = plan_of_herd(climate_herd, climate_plan,
                                         verbose=verbose)
+
+            climate_title_height = 0.1
+            climate_delta_height = 1
             
             climate_delta_width = 1
             climate_table_width = 1
 
-            #### Climate plot ____________________________________________________        
+#### Title __________________________________________________________
+            title_text = paste0("(", letters[id_letter], ") Changements de précipitation (%) en fonction des changements de température (°C)")
+            
+            title = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0, y=0.5,
+                         label=latex2exp::TeX(title_text),
+                         size=3, hjust=0, vjust=0.5,
+                         family="Lato",
+                         color=IPCCgrey23)
+            
+            climate_herd = add_sheep(climate_herd,
+                                     sheep=title,
+                                     id="title",
+                                     height=climate_title_height,
+                                     verbose=verbose)
+            
+#### Climate plot ____________________________________________________
             climate_delta_plan = matrix(c(
-                "title", "title", "title",
-                "dR",    "hiver_title", "ete_title",
-                "dR",    "hiver", "ete",
-                "void",  "dT",    "dT" 
-            ), ncol=3, byrow=TRUE)
+                "void", "hiver_title", "space", "ete_title",
+                "dR",   "hiver",       "space", "ete",
+                "void", "dT",          "space", "dT" 
+            ), ncol=4, byrow=TRUE)
 
-            climate_delta_title_height = 0.1
             climate_delta_variable_title_height = 0.1
             climate_delta_variable_height = 1
             climate_delta_dT_height = 0.1
             
             climate_delta_variable_width = 1
+            climate_delta_space_width = 0.03
             climate_delta_dR_width = 0.1
             
             climate_delta_herd = bring_grass(verbose=verbose)
             climate_delta_herd = plan_of_herd(climate_delta_herd, climate_delta_plan,
                                               verbose=verbose)
-            
-            climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
-                                           id="title",
-                                           height=climate_delta_title_height,
-                                           verbose=verbose)
 
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=void(),
                                            id="void",
                                            verbose=verbose)
-
+            
             climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
+                                           sheep=void(),
+                                           id="space",
+                                           width=climate_delta_space_width,
+                                           verbose=verbose)
+
+##### axis __________________________________________________________
+            axis_dR = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0.5, y=0.5,
+                         label=latex2exp::TeX("$\\Delta$R : Changements de précipitations (%)"),
+                         size=2.4, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35)
+            
+            climate_delta_herd = add_sheep(climate_delta_herd,
+                                           sheep=axis_dR,
                                            id="dR",
                                            width=climate_delta_dR_width,
                                            verbose=verbose)
             
+            axis_dT = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0.5, y=0.5,
+                         label=latex2exp::TeX("$\\Delta$T : Changements de température (°C)"),
+                         size=2.4, hjust=0.5, vjust=0.5,
+                         family="Lato",
+                         color=IPCCgrey35)
+
             climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
+                                           sheep=axis_dT,
                                            id="dT",
                                            height=climate_delta_dT_height,
                                            verbose=verbose)
 
+##### hiver __________________________________________________________
+            delta_title = ggplot() + theme_void() +
+                theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                   color=NA),
+                      plot.margin=margin(t=0, r=0, b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0.5, y=0.5,
+                         label=latex2exp::TeX("\u2746 \\textbf{HIVER}"),
+                         size=2.4, hjust=0.5, vjust=0.5,
+                         family="Lato",
+                         color=IPCCgrey40)
+            
             climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
+                                           sheep=delta_title,
                                            id="hiver_title",
                                            height=climate_delta_variable_title_height,
                                            verbose=verbose)
-            
+
+
+            panel_delta_variable = function (dataEX_criteria_sl_wl,
+                                             season) {
+
+                expand = function (X, fact=0.05) {
+                    range_X = max(X)-min(X)
+                    padding = range_X*fact
+                    X = c(min(X)-padding, max(X)+padding)
+                    return (X)
+                }
+
+
+                                
+                get_labels = function(x, unit, is_unit_plurial, add_unit_space, Palette, dColor) {
+                    nColor = length(Palette)
+                    unit_suffixed = ifelse(!is_unit_plurial, unit,
+                                    ifelse(x != 0, paste0(unit, "s"), unit))
+                    unitHTML = ifelse(add_unit_space,
+                                      paste0("<span style='font-size:6pt'> ", unit_suffixed, "</span>"),
+                                      paste0("<span style='font-size:6pt'>", unit_suffixed, "</span>"))
+
+                    color = ifelse(x < 0, Palette[1 + dColor],
+                            ifelse(x > 0, Palette[nColor - dColor], ""))
+
+                    x_text = ifelse(x > 0, paste0("+", x), as.character(x))
+
+                    result = ifelse(x < 0 | x > 0,
+                                    paste0("<span style='color:", color, "'><b>", x_text, "</b>", unitHTML, "</span>"),
+                                    paste0("<span style=''><b>", x_text, "</b></span>"))
+
+                    return (result)
+                }
+
+                get_labels_deltaR = function(x) {
+                    result = get_labels(x, unit="%",
+                                        is_unit_plurial=FALSE,
+                                        add_unit_space=TRUE,
+                                        Palette=get_IPCC_Palette("hydro_10"),
+                                        dColor=1)
+                    return (result)
+                }
+                
+                get_labels_deltaT = function(x) {
+                    result = get_labels(x, unit="°C",
+                                        is_unit_plurial=FALSE,
+                                        add_unit_space=FALSE,
+                                        Palette=get_IPCC_Palette("temperature_10"),
+                                        dColor=1)
+                    return (result)
+                }
+
+                TMm_range = c(min(dataEX_criteria_sl_wl[[paste0("delta_TMm_", season)]]),
+                              max(dataEX_criteria_sl_wl[[paste0("delta_TMm_", season)]]))
+                TMm_range = expand(TMm_range)
+                
+                RR_range = c(min(dataEX_criteria_sl_wl[[paste0("delta_RR_", season)]]),
+                             max(dataEX_criteria_sl_wl[[paste0("delta_RR_", season)]]))
+                RR_range = expand(RR_range)
+                
+                delta_variable = ggplot() +
+                    theme(plot.margin=margin(t=0, r=2,
+                                             b=0, l=1, "mm")) +
+                    theme_IPCC(is_plot.background=TRUE,
+                               is_panel.grid.major.x=TRUE,
+                               is_panel.grid.major.y=TRUE,
+                               is_axis.line.x=FALSE,
+                               is_axis.ticks.x=FALSE,
+                               is_axis.ticks.y=FALSE,
+                               axis.ticks.length.x=0.8) +
+                    
+                    geom_point(data=dataEX_criteria_sl_wl,
+                               aes(x=get(paste0("delta_TMm_", season)),
+                                   y=get(paste0("delta_RR_", season))),
+                               size=1, color=IPCCgrey50)
+                if (RR_range[1] <= 0 & 0 <= RR_range[2]) {
+                    delta_variable = delta_variable +
+                        annotate("line",
+                                 x=TMm_range, y=0,
+                                 color=IPCCgrey60,
+                                 linewidth=0.33)
+                }
+                if (RR_range[1] <= 0 & 0 <= RR_range[2]) {
+                    delta_variable = delta_variable +
+                        annotate("line",
+                                 x=0, y=RR_range,
+                                 color=IPCCgrey60,
+                                 linewidth=0.33)
+                }
+                
+                delta_variable = delta_variable +            
+                    scale_x_continuous(limits=TMm_range,
+                                       labels=get_labels_deltaT,
+                                       expand=c(0, 0)) +
+                    
+                    scale_y_continuous(limits=RR_range,
+                                       labels=get_labels_deltaR,
+                                       expand=c(0, 0))
+
+                return (delta_variable)
+            }
+
+            delta_variable = panel_delta_variable(dataEX_criteria_sl_wl, "DJF")
+    
             climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
+                                           sheep=delta_variable,
                                            id="hiver",
                                            height=climate_delta_variable_height,
                                            width=climate_delta_variable_width,
                                            verbose=verbose)
 
+##### ete __________________________________________________________
+            delta_title = ggplot() + theme_void() +
+                theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                   color=NA),
+                      plot.margin=margin(t=0, r=0, b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0.5, y=0.5,
+                         label=latex2exp::TeX("\u263C \\textbf{ÉTÉ}"),
+                         size=2.4, hjust=0.5, vjust=0.5,
+                         family="Lato",
+                         color=IPCCgrey40)
+            
             climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
+                                           sheep=delta_title,
                                            id="ete_title",
                                            height=climate_delta_variable_title_height,
                                            verbose=verbose)
+
+
+            delta_variable = panel_delta_variable(dataEX_criteria_sl_wl, "JJA")
             
             climate_delta_herd = add_sheep(climate_delta_herd,
-                                           sheep=contour(),
+                                           sheep=delta_variable,
                                            id="ete",
                                            height=climate_delta_variable_height,
                                            width=climate_delta_variable_width,
@@ -525,27 +724,27 @@ sheet_projection_secteur = function (meta,
             
             #### Climate table ___________________________________________________
             climate_table_plan = matrix(c(
-                "climate_table_title",
-                "climate_table_content"
+                "climate_table_content",
+                "climate_table_info"
             ), ncol=1, byrow=TRUE)
 
-            climate_table_title_height = 0.1
             climate_table_content_height = 1
+            climate_table_info_height = 0.1
 
             climate_table_herd = bring_grass(verbose=verbose)
             climate_table_herd = plan_of_herd(climate_table_herd, climate_table_plan,
                                               verbose=verbose)
-
-            climate_table_herd = add_sheep(climate_table_herd,
-                                           sheep=contour(),
-                                           id="climate_table_title",
-                                           height=climate_table_title_height,
-                                           verbose=verbose)
             
             climate_table_herd = add_sheep(climate_table_herd,
                                            sheep=contour(),
                                            id="climate_table_content",
                                            height=climate_table_content_height,
+                                           verbose=verbose)
+
+            climate_table_herd = add_sheep(climate_table_herd,
+                                           sheep=contour(),
+                                           id="climate_table_info",
+                                           height=climate_table_info_height,
                                            verbose=verbose)
             
             climate_herd = add_sheep(climate_herd,
@@ -771,7 +970,7 @@ sheet_projection_secteur = function (meta,
             plot = res$plot
             paper_size = res$paper_size
 
-            filename = paste0("RWL-", wl["RWLclean"], "_SH-",  sh, "_projection_datasheet.pdf")
+            filename = paste0(sh, "_", wl["RWLclean"], "_projection_datasheet.pdf")
 
             if (!(file.exists(figdir))) {
                 dir.create(figdir, recursive=TRUE)
