@@ -21,7 +21,8 @@
 # If not, see <https://www.gnu.org/licenses/>.
 
 
-sheet_projection_secteur = function (meta,
+sheet_projection_secteur = function (Stations,
+                                     Secteur,
                                      dataEX_serie,
                                      metaEX_serie,
                                      dataEX_criteria,
@@ -35,7 +36,7 @@ sheet_projection_secteur = function (meta,
                                      Shapefiles=NULL,
                                      figdir="",
                                      verbose=FALSE) {
-    
+
     page_margin = c(t=0.5, r=0.5, b=0.5, l=0.5)
 
     height = 29.7 - page_margin["t"] - page_margin["b"]
@@ -88,6 +89,8 @@ sheet_projection_secteur = function (meta,
         
         print(paste0(i, "/", nSH, " so ", round(i/nSH*100, 1), "% done -> ", sh))
 
+        Secteur = Secteurs[Secteurs$id_secteur == sh,]
+        
         Stations_sh = filter(Stations, substr(code, 1, 2) == sh)
         dataEX_criteria_sh = filter(dataEX_criteria, SH == sh)
 
@@ -119,7 +122,7 @@ sheet_projection_secteur = function (meta,
                 "map", "legend", "logo"
             ), ncol=3, byrow=TRUE)
 
-            info_title_height = 2.2
+            info_title_height = 1.5
             info_legend_height = 1
             
             info_map_width = 1
@@ -148,7 +151,7 @@ sheet_projection_secteur = function (meta,
             
             cf = coord_fixed()
             cf$default = TRUE
-            map = ggplot() + theme_void_Lato() + cf +
+            map = ggplot() + theme_void() + cf +
                 theme(plot.margin=margin_map) +
                 geom_sf(data=Shapefiles$france,
                         color=NA,
@@ -225,11 +228,11 @@ sheet_projection_secteur = function (meta,
                                   verbose=verbose)
 
             #### Info text _______________________________________________________
-            dy_newline = 0.2
-            dy_region = 0.25
-            dy_basin = 0.13
+            dy_newline = 0.24
+            dy_region = 0.29
+            dy_basin = 0.15
             
-            title_text = strwrap(paste0(sh, " - ", secteurHydro_shp$LbSecteurH), width=42)
+            title_text = strwrap(paste0(sh, " - ", Secteur$secteur), width=42)
             nLine = length(title_text)
             title_text[1] = sub("[-] ", "- \\\\textbf{", title_text[1])
             title_text[1] = paste0(title_text[1], "}")
@@ -252,8 +255,8 @@ sheet_projection_secteur = function (meta,
                              color=TRACCblue)
             }
 
-            region = paste0("\\textbf{Region hydro.} \\; ", secteurHydro_shp$LbRegionHy)
-            basin = paste0("\\textbf{Bassin de gestion} \\; ", "xxx")
+            region = paste0("\\textbf{Region hydro.} \\; ", Secteur$region)
+            basin = paste0("\\textbf{Bassin de gestion} \\; ", Secteur$bassin)
             
             title = title +
                 annotate("text",
@@ -286,15 +289,10 @@ sheet_projection_secteur = function (meta,
 
             narratracc = ggplot() + theme_void() +
                 theme(plot.margin=margin(t=0, r=0,
-                                         b=0, l=0, "mm")) +
-                scale_x_continuous(limits=c(0, 1),
-                                   expand=c(0, 0)) +
-                scale_y_continuous(limits=c(0, 1),
-                                   expand=c(0, 0))
-
+                                         b=0, l=0, "mm"))
             dy0 = 0.98
-            dy_title = 0.32
-            dy = 0.21
+            dy_title = 0.27
+            dy_newline = 0.17
             
             dx0 = 0.02
             dx_narratracc = 0.01
@@ -303,7 +301,7 @@ sheet_projection_secteur = function (meta,
             dx_text = 0.03
 
             linewidth = 1.4
-
+            
             narratracc = narratracc +
                 annotate("text",
                          x=dx0,
@@ -316,8 +314,8 @@ sheet_projection_secteur = function (meta,
             nNarraTRACC = length(NarraTRACC)
             
             for (k in 1:nNarraTRACC) {
-                y = dy0 - dy_title - dy*(k-1)
-                label = latex2exp::TeX(paste0(NarraTRACC[[k]]["name"], " : ", NarraTRACC[[k]]["description"]))
+                y = dy0 - dy_title - dy_newline*(k-1)
+                label = paste0(NarraTRACC[[k]]["name"], " : ", NarraTRACC[[k]]["description"])
                 narratracc = narratracc +
                     annotate("line",
                              x=dx0 + dx_narratracc + c(0, dx_line),
@@ -339,7 +337,12 @@ sheet_projection_secteur = function (meta,
                              family="Lato",
                              color=IPCCgrey35)
             }
-            
+
+            narratracc = narratracc +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0))
 
             info_herd = add_sheep(info_herd,
                                   sheep=narratracc,
@@ -959,6 +962,48 @@ sheet_projection_secteur = function (meta,
                              width=width,
                              verbose=verbose)
 
+
+
+        # aaaa = ggplot() + theme_void_Lato() +
+        #     theme(plot.margin=margin(t=0, r=0,
+        #                              b=0, l=0, "mm")) +                      
+        #     annotate("text",
+        #              x=0,
+        #              y=0.5,
+        #              label=TeX("Changements futurs relativement peu marqués"),
+        #                  # "Argousier : Débits réduits et étiages sévères",
+        #              size=2.4, hjust=0, vjust=0,
+        #              family="Lato",
+        #              color=IPCCgrey35)+
+        #         scale_x_continuous(limits=c(0, 1),
+        #                            expand=c(0, 0)) +
+        #         scale_y_continuous(limits=c(0, 1),
+        #                            expand=c(0, 0))
+            
+        #     plan = matrix(c(
+        #         "aaaa",
+        #         "void"
+        #     ), ncol=1, byrow=TRUE)
+
+
+        #     herd = bring_grass(verbose=verbose)
+        #     herd = plan_of_herd(herd, plan,
+        #                         verbose=verbose)
+
+        #     herd = add_sheep(herd,
+        #                      sheep=aaaa,
+        #                      id="aaaa",
+        #                      height=10,
+        #                      width=width,
+        #                      verbose=verbose)
+
+        #     herd = add_sheep(herd,
+        #                      sheep=contour(),
+        #                      id="void",
+        #                      height=height-10,
+        #                      width=width,
+        #                      verbose=verbose)
+
             
             
             ## Plot ______________________________________________________________
@@ -975,6 +1020,26 @@ sheet_projection_secteur = function (meta,
             if (!(file.exists(figdir))) {
                 dir.create(figdir, recursive=TRUE)
             }
+
+            # width_in = paper_size[1] / 2.54
+            # height_in = paper_size[2] / 2.54
+            # full_path = file.path(figdir, filename)
+
+            # cairo_pdf(filename=full_path,
+            #           width=width_in,
+            #           height=height_in)
+            
+            # showtext::showtext_begin()
+            # grid::grid.draw(plot)
+            # showtext::showtext_end()
+            # dev.off()
+
+
+
+            # showtext::showtext_auto()
+            # showtext::showtext_opts(dpi = 300)
+            # sysfonts::font_add_google("Lato", "Lato")
+            
             ggplot2::ggsave(plot=plot,
                             path=figdir,
                             filename=filename,
@@ -982,7 +1047,16 @@ sheet_projection_secteur = function (meta,
                             height=paper_size[2], units='cm',
                             dpi=300,
                             device=cairo_pdf)
+            # showtext::showtext_auto(FALSE)
 
+            
+            # Cairo::CairoPDF(file=file.path(figdir, filename),
+            #                 width=paper_size[1]/2.54,
+            #                 height=paper_size[2]/2.54,
+            #                 title="")
+            # grid::grid.draw(plot)
+            # dev.off()
+            
             stop()
         }
     }
