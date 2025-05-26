@@ -30,7 +30,7 @@ sheet_projection_secteur = function (Stations,
                                      WL,
                                      NarraTRACC,
                                      delta_prob=0, 
-                                     icon_path="",
+                                     icons=NULL,
                                      logo_info="",
                                      Pages=NULL,
                                      Shapefiles=NULL,
@@ -141,7 +141,7 @@ sheet_projection_secteur = function (Stations,
             echelle = c(0, 100, 250)
             x_echelle_pct = 2
             y_echelle_pct = 4
-            echelle_line_size = 0.4
+            echelle_line_size = 0.3
             echelle_size = 2.1
             echelle_km_size = 2
             echelle_tick_height = 2
@@ -484,7 +484,7 @@ sheet_projection_secteur = function (Stations,
             
 #### Climate plot ____________________________________________________
             climate_delta_plan = matrix(c(
-                "void", "hiver_title", "space", "ete_title",
+                "dR", "hiver_title", "space", "ete_title",
                 "dR",   "hiver",       "space", "ete",
                 "void", "dT",          "space", "dT" 
             ), ncol=4, byrow=TRUE)
@@ -513,6 +513,9 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 ##### axis __________________________________________________________
+            dx_dR = 0.06
+            dx_dT = 0.2
+            
             axis_dR = ggplot() + theme_void() +
                 theme(plot.margin=margin(t=0, r=0,
                                          b=0, l=0, "mm")) +
@@ -521,9 +524,15 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
                 annotate("text",
-                         x=0.5, y=0.5,
-                         label=latex2exp::TeX("$\\Delta$R : Changements de précipitations (%)"),
-                         size=2.4, hjust=0.5, vjust=0.5,
+                         x=0.5, y=dx_dR,
+                         label="Δ",
+                         size=2.4, hjust=0, vjust=0.42,
+                         angle=90,
+                         color=IPCCgrey35) +
+                annotate("text",
+                         x=0.5, y=dx_dR,
+                         label=latex2exp::TeX("\\; $\\Delta$R : Changements de précipitations (%)"),
+                         size=2.4, hjust=0, vjust=0.5,
                          angle=90,
                          family="Lato",
                          color=IPCCgrey35)
@@ -542,9 +551,15 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
                 annotate("text",
-                         x=0.5, y=0.5,
-                         label=latex2exp::TeX("$\\Delta$T : Changements de température (°C)"),
-                         size=2.4, hjust=0.5, vjust=0.5,
+                         x=dx_dT, y=0.5,
+                         label="Δ",
+                         size=2.4, hjust=0, vjust=0.42,
+                         family="Noto Sans",
+                         color=IPCCgrey35) +
+                annotate("text",
+                         x=dx_dT, y=0.5,
+                         label=latex2exp::TeX("\\; T : Changements de température (°C)"),
+                         size=2.4, hjust=0, vjust=0.5,
                          family="Lato",
                          color=IPCCgrey35)
 
@@ -555,6 +570,9 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 ##### hiver __________________________________________________________
+            dx_title = 0.46 
+            dy_title = 0.25
+            
             delta_title = ggplot() + theme_void() +
                 theme(plot.background=element_rect(fill=IPCCgrey97,
                                                    color=NA),
@@ -564,9 +582,15 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
                 annotate("text",
-                         x=0.5, y=0.5,
-                         label=latex2exp::TeX("\u2746 \\textbf{HIVER}"),
-                         size=2.4, hjust=0.5, vjust=0.5,
+                         x=dx_title, y=dy_title,
+                         label="mode_cool",
+                         size=2.4, hjust=0, vjust=0.15,
+                         family="Material Symbols Outlined",
+                         color=IPCCgrey40) +
+                annotate("text",
+                         x=dx_title, y=dy_title,
+                         label=latex2exp::TeX("\\;\\; \\textbf{HIVER}"),
+                         size=2.4, hjust=0, vjust=0,
                          family="Lato",
                          color=IPCCgrey40)
             
@@ -594,7 +618,7 @@ sheet_projection_secteur = function (Stations,
                     unit_suffixed = ifelse(!is_unit_plurial, unit,
                                     ifelse(x != 0, paste0(unit, "s"), unit))
                     unitHTML = ifelse(add_unit_space,
-                                      paste0("<span style='font-size:6pt'> ", unit_suffixed, "</span>"),
+                                      paste0("<span style='font-size:4pt'> </span><span style='font-size:6pt'>", unit_suffixed, "</span>"),
                                       paste0("<span style='font-size:6pt'>", unit_suffixed, "</span>"))
 
                     color = ifelse(x < 0, Palette[1 + dColor],
@@ -621,7 +645,7 @@ sheet_projection_secteur = function (Stations,
                 get_labels_deltaT = function(x) {
                     result = get_labels(x, unit="°C",
                                         is_unit_plurial=FALSE,
-                                        add_unit_space=FALSE,
+                                        add_unit_space=TRUE,
                                         Palette=get_IPCC_Palette("temperature_10"),
                                         dColor=1)
                     return (result)
@@ -637,19 +661,7 @@ sheet_projection_secteur = function (Stations,
                 
                 delta_variable = ggplot() +
                     theme(plot.margin=margin(t=0, r=2,
-                                             b=0, l=1, "mm")) +
-                    theme_IPCC(is_plot.background=TRUE,
-                               is_panel.grid.major.x=TRUE,
-                               is_panel.grid.major.y=TRUE,
-                               is_axis.line.x=FALSE,
-                               is_axis.ticks.x=FALSE,
-                               is_axis.ticks.y=FALSE,
-                               axis.ticks.length.x=0.8) +
-                    
-                    geom_point(data=dataEX_criteria_sl_wl,
-                               aes(x=get(paste0("delta_TMm_", season)),
-                                   y=get(paste0("delta_RR_", season))),
-                               size=1, color=IPCCgrey50)
+                                             b=0, l=1, "mm"))
                 if (RR_range[1] <= 0 & 0 <= RR_range[2]) {
                     delta_variable = delta_variable +
                         annotate("line",
@@ -665,7 +677,18 @@ sheet_projection_secteur = function (Stations,
                                  linewidth=0.33)
                 }
                 
-                delta_variable = delta_variable +            
+                delta_variable = delta_variable +    
+                    theme_IPCC(is_plot.background=TRUE,
+                               is_panel.grid.major.x=TRUE,
+                               is_panel.grid.major.y=TRUE,
+                               is_axis.line.x=FALSE,
+                               is_axis.ticks.x=FALSE,
+                               is_axis.ticks.y=FALSE,
+                               axis.ticks.length.x=0.8) +
+                    geom_point(data=dataEX_criteria_sl_wl,
+                               aes(x=get(paste0("delta_TMm_", season)),
+                                   y=get(paste0("delta_RR_", season))),
+                               size=1, color=IPCCgrey50) + 
                     scale_x_continuous(limits=TMm_range,
                                        labels=get_labels_deltaT,
                                        expand=c(0, 0)) +
@@ -696,9 +719,15 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
                 annotate("text",
-                         x=0.5, y=0.5,
-                         label=latex2exp::TeX("\u263C \\textbf{ÉTÉ}"),
-                         size=2.4, hjust=0.5, vjust=0.5,
+                         x=dx_title, y=dy_title,
+                         label="sunny",
+                         size=2.4, hjust=0, vjust=0.15,
+                         family="Material Symbols Rounded",
+                         color=IPCCgrey40) +
+                annotate("text",
+                         x=dx_title, y=dy_title,
+                         label=latex2exp::TeX("\\;\\; \\textbf{ÉTÉ}"),
+                         size=2.4, hjust=0, vjust=0,
                          family="Lato",
                          color=IPCCgrey40)
             
@@ -732,20 +761,100 @@ sheet_projection_secteur = function (Stations,
             ), ncol=1, byrow=TRUE)
 
             climate_table_content_height = 1
-            climate_table_info_height = 0.1
+            climate_table_info_height = 0.2
 
             climate_table_herd = bring_grass(verbose=verbose)
             climate_table_herd = plan_of_herd(climate_table_herd, climate_table_plan,
                                               verbose=verbose)
+
+##### table ___________________________________________________________
+
+            column_id = c("delta_TMm_DJF", "delta_RR_DJF", "delta_TMm_JJA", "delta_RR_JJA")
+            column_name = c("T", "R", "T", "R")
+            column_icon = c("mode_cool", "mode_cool", "sunny", "sunny")
+            column_icon_font = c("Material Symbols Outlined", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Rounded")
+            column_unit = c("°C", "%", "°C", "%")
+            
+            row_id = c("min",
+                       "median",
+                       "max",
+                       sapply(NarraTRACC, "[", "Chain"))
+            row_name = c("Minimum",
+                         "Médiane",
+                         "Maximum",
+                         sapply(NarraTRACC, "[", "name"))
+            row_color = c(rep(IPCCgrey35, 3),
+                          sapply(NarraTRACC, "[", "color"))
+
+            
+            dy_column_title = 2
+            dx_column = 1
+
+            dx_row_title = 2
+            dy_row = 1
+
+            nCol = length(column_id) 
+            nRow = length(row_id)            
+
+            print(dataEX_criteria_stat)
+            
+            table = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 10),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 10),
+                                   expand=c(0, 0))
+
+
+
+            
+            # for (rr in 1:nRow) {
+            #     for (cc in 1:nCol) {
+                    
+
+
+                    
+            #     }
+            # }
+            
+            
+
+            
             
             climate_table_herd = add_sheep(climate_table_herd,
-                                           sheep=contour(),
+                                           sheep=table,
                                            id="climate_table_content",
                                            height=climate_table_content_height,
                                            verbose=verbose)
 
+##### info ___________________________________________________________
+            dy_newline = 0.27
+            info_text = c("Changements projetés en température et précipitations (référence : 1976-2005)",
+                          "Les points correspondent aux 17 projections à partir desquelles sont calculées",
+                          "les statistiques (minimum, médiane, maximum)")
+            
+            info = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0))
+
+            for (k in 1:length(info_text)) {
+                info = info +             
+                    annotate("text",
+                             x=0.5,
+                             y=0.9 - dy_newline*(k-1),
+                             label=info_text[k],
+                             size=2, hjust=0.5, vjust=1,
+                             family="Lato",
+                             color=IPCCgrey50)
+            }
+            
             climate_table_herd = add_sheep(climate_table_herd,
-                                           sheep=contour(),
+                                           sheep=info,
                                            id="climate_table_info",
                                            height=climate_table_info_height,
                                            verbose=verbose)
@@ -1040,20 +1149,28 @@ sheet_projection_secteur = function (Stations,
             # showtext::showtext_opts(dpi = 300)
             # sysfonts::font_add_google("Lato", "Lato")
             
-            ggplot2::ggsave(plot=plot,
-                            path=figdir,
-                            filename=filename,
-                            width=paper_size[1],
-                            height=paper_size[2], units='cm',
-                            dpi=300,
-                            device=cairo_pdf)
-            # showtext::showtext_auto(FALSE)
+            # ggplot2::ggsave(plot=plot,
+            #                 path=figdir,
+            #                 filename=filename,
+            #                 width=paper_size[1],
+            #                 height=paper_size[2], units='cm',
+            #                 dpi=300,
+            #                 device=cairo_pdf)
+
 
             
-            # Cairo::CairoPDF(file=file.path(figdir, filename),
-            #                 width=paper_size[1]/2.54,
-            #                 height=paper_size[2]/2.54,
-            #                 title="")
+            Cairo::CairoPDF(file=file.path(figdir, filename),
+                            width=paper_size[1]/2.54,
+                            height=paper_size[2]/2.54,
+                            title="")
+            grid::grid.draw(plot)
+            dev.off()
+
+
+            # grDevices::cairo_pdf(file=file.path(figdir, filename),
+            #                      width=paper_size[1]/2.54,
+            #                      height=paper_size[2]/2.54)
+            # grid::grid.newpage()
             # grid::grid.draw(plot)
             # dev.off()
             
