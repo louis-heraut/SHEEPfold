@@ -107,8 +107,8 @@ sheet_projection_secteur = function (Stations,
             print(paste0(j, "/", nWL, " so ", round(j/nWL*100, 1), "% done -> ", wl["RWL"]))
 
             
-            dataEX_criteria_sl_wl = dplyr::filter(dataEX_criteria, SH==sh, GWL==wl["GWLclean"])
-            dataEX_criteria_stat_sl_wl = dplyr::filter(dataEX_criteria_stat, SH==sh, GWL==wl["GWLclean"])
+            dataEX_criteria_sh_wl = dplyr::filter(dataEX_criteria, SH==sh, GWL==wl["GWLclean"])
+            dataEX_criteria_stat_sh_wl = dplyr::filter(dataEX_criteria_stat, SH==sh, GWL==wl["GWLclean"])
     
             
             ## PAGE _________________________________________________________
@@ -142,8 +142,8 @@ sheet_projection_secteur = function (Stations,
             x_echelle_pct = 2
             y_echelle_pct = 4
             echelle_line_size = 0.3
-            echelle_size = 2.1
-            echelle_km_size = 2
+            echelle_size = 2
+            echelle_km_size = 1.8
             echelle_tick_height = 2
 
             ymin_km_shift = 2
@@ -160,13 +160,13 @@ sheet_projection_secteur = function (Stations,
                         color="white",
                         alpha=1,
                         fill=NA,
-                        linewidth=0.7,
+                        linewidth=0.65,
                         na.rm=TRUE) +
                 geom_sf(data=Shapefiles$river,
                         color=INRAElightcyan,
                         alpha=1,
                         fill=NA,
-                        linewidth=0.35,
+                        linewidth=0.3,
                         na.rm=TRUE) +
                 geom_sf(data=Shapefiles$bassinHydro,
                         color=IPCCgrey85,
@@ -175,7 +175,7 @@ sheet_projection_secteur = function (Stations,
                 geom_sf(data=Shapefiles$france,
                         color=IPCCgrey40,
                         fill=NA,
-                        linewidth=0.35)
+                        linewidth=0.3)
             
             xmin = gpct(x_echelle_pct, xlim, shift=TRUE)
             xint = echelle*1E3
@@ -211,11 +211,11 @@ sheet_projection_secteur = function (Stations,
                 geom_sf(data=secteurHydro_shp,
                         color="white",
                         fill=NA,
-                        linewidth=1.1) +
+                        linewidth=1.05) +
                 geom_sf(data=secteurHydro_shp,
                         color=wl["color"],
                         fill=NA,
-                        linewidth=0.5)
+                        linewidth=0.45)
 
             map = map +
                 coord_sf(xlim=xlim, ylim=ylim,
@@ -300,14 +300,14 @@ sheet_projection_secteur = function (Stations,
             p_line = 0.75
             dx_text = 0.03
 
-            linewidth = 1.4
+            linewidth = 1.1
             
             narratracc = narratracc +
                 annotate("text",
                          x=dx0,
                          y=dy0,
                          label=latex2exp::TeX("\\textbf{NarraTRACC}"),
-                         size=2.4, hjust=0, vjust=1,
+                         size=2.2, hjust=0, vjust=1,
                          family="Lato",
                          color=IPCCgrey35)
 
@@ -333,7 +333,7 @@ sheet_projection_secteur = function (Stations,
                              x=dx0 + dx_narratracc + dx_line + dx_text,
                              y=y,
                              label=label,
-                             size=2.4, hjust=0, vjust=0.55,
+                             size=2.2, hjust=0, vjust=0.55,
                              family="Lato",
                              color=IPCCgrey35)
             }
@@ -531,7 +531,7 @@ sheet_projection_secteur = function (Stations,
                          color=IPCCgrey35) +
                 annotate("text",
                          x=0.5, y=dx_dR,
-                         label=latex2exp::TeX("\\; $\\Delta$R : Changements de précipitations (%)"),
+                         label=latex2exp::TeX("\\; R : Changements de précipitations (%)"),
                          size=2.4, hjust=0, vjust=0.5,
                          angle=90,
                          family="Lato",
@@ -600,8 +600,27 @@ sheet_projection_secteur = function (Stations,
                                            height=climate_delta_variable_title_height,
                                            verbose=verbose)
 
+            get_labels_HTML = function(x, unit, is_unit_plurial, add_unit_space, Palette, dColor) {
+                nColor = length(Palette)
+                unit_suffixed = ifelse(!is_unit_plurial, unit,
+                                ifelse(x != 0, paste0(unit, "s"), unit))
+                result = ifelse(add_unit_space,
+                                  paste0("<span style='font-size:4pt'> </span><span style='font-size:6pt'>", unit_suffixed, "</span>"),
+                                  paste0("<span style='font-size:6pt'>", unit_suffixed, "</span>"))
 
-            panel_delta_variable = function (dataEX_criteria_sl_wl,
+                color = ifelse(x < 0, Palette[1 + dColor],
+                        ifelse(x > 0, Palette[nColor - dColor], ""))
+
+                x_text = ifelse(x > 0, paste0("+", x), as.character(x))
+
+                result = ifelse(x < 0 | x > 0,
+                                paste0("<span style='color:", color, "'><b>", x_text, "</b>", result, "</span>"),
+                                paste0("<span style=''><b>", x_text, "</b></span>"))
+
+                return (result)
+            }
+            
+            panel_delta_variable = function (dataEX_criteria_sh_wl,
                                              season) {
 
                 expand = function (X, fact=0.05) {
@@ -611,52 +630,30 @@ sheet_projection_secteur = function (Stations,
                     return (X)
                 }
 
-
-                                
-                get_labels = function(x, unit, is_unit_plurial, add_unit_space, Palette, dColor) {
-                    nColor = length(Palette)
-                    unit_suffixed = ifelse(!is_unit_plurial, unit,
-                                    ifelse(x != 0, paste0(unit, "s"), unit))
-                    unitHTML = ifelse(add_unit_space,
-                                      paste0("<span style='font-size:4pt'> </span><span style='font-size:6pt'>", unit_suffixed, "</span>"),
-                                      paste0("<span style='font-size:6pt'>", unit_suffixed, "</span>"))
-
-                    color = ifelse(x < 0, Palette[1 + dColor],
-                            ifelse(x > 0, Palette[nColor - dColor], ""))
-
-                    x_text = ifelse(x > 0, paste0("+", x), as.character(x))
-
-                    result = ifelse(x < 0 | x > 0,
-                                    paste0("<span style='color:", color, "'><b>", x_text, "</b>", unitHTML, "</span>"),
-                                    paste0("<span style=''><b>", x_text, "</b></span>"))
-
-                    return (result)
-                }
-
                 get_labels_deltaR = function(x) {
-                    result = get_labels(x, unit="%",
-                                        is_unit_plurial=FALSE,
-                                        add_unit_space=TRUE,
-                                        Palette=get_IPCC_Palette("hydro_10"),
-                                        dColor=1)
+                    result = get_labels_HTML(x, unit="%",
+                                             is_unit_plurial=FALSE,
+                                             add_unit_space=TRUE,
+                                             Palette=get_IPCC_Palette("hydro_10"),
+                                             dColor=1)
                     return (result)
                 }
                 
                 get_labels_deltaT = function(x) {
-                    result = get_labels(x, unit="°C",
-                                        is_unit_plurial=FALSE,
-                                        add_unit_space=TRUE,
-                                        Palette=get_IPCC_Palette("temperature_10"),
-                                        dColor=1)
+                    result = get_labels_HTML(x, unit="°C",
+                                             is_unit_plurial=FALSE,
+                                             add_unit_space=TRUE,
+                                             Palette=get_IPCC_Palette("temperature_10"),
+                                             dColor=1)
                     return (result)
                 }
 
-                TMm_range = c(min(dataEX_criteria_sl_wl[[paste0("delta_TMm_", season)]]),
-                              max(dataEX_criteria_sl_wl[[paste0("delta_TMm_", season)]]))
+                TMm_range = c(min(dataEX_criteria_sh_wl[[paste0("delta_TMm_", season)]]),
+                              max(dataEX_criteria_sh_wl[[paste0("delta_TMm_", season)]]))
                 TMm_range = expand(TMm_range)
                 
-                RR_range = c(min(dataEX_criteria_sl_wl[[paste0("delta_RR_", season)]]),
-                             max(dataEX_criteria_sl_wl[[paste0("delta_RR_", season)]]))
+                RR_range = c(min(dataEX_criteria_sh_wl[[paste0("delta_RR_", season)]]),
+                             max(dataEX_criteria_sh_wl[[paste0("delta_RR_", season)]]))
                 RR_range = expand(RR_range)
                 
                 delta_variable = ggplot() +
@@ -685,7 +682,7 @@ sheet_projection_secteur = function (Stations,
                                is_axis.ticks.x=FALSE,
                                is_axis.ticks.y=FALSE,
                                axis.ticks.length.x=0.8) +
-                    geom_point(data=dataEX_criteria_sl_wl,
+                    geom_point(data=dataEX_criteria_sh_wl,
                                aes(x=get(paste0("delta_TMm_", season)),
                                    y=get(paste0("delta_RR_", season))),
                                size=1, color=IPCCgrey50) + 
@@ -700,7 +697,7 @@ sheet_projection_secteur = function (Stations,
                 return (delta_variable)
             }
 
-            delta_variable = panel_delta_variable(dataEX_criteria_sl_wl, "DJF")
+            delta_variable = panel_delta_variable(dataEX_criteria_sh_wl, "DJF")
     
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=delta_variable,
@@ -738,7 +735,7 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 
-            delta_variable = panel_delta_variable(dataEX_criteria_sl_wl, "JJA")
+            delta_variable = panel_delta_variable(dataEX_criteria_sh_wl, "JJA")
             
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=delta_variable,
@@ -769,54 +766,163 @@ sheet_projection_secteur = function (Stations,
 
 ##### table ___________________________________________________________
 
-            column_id = c("delta_TMm_DJF", "delta_RR_DJF", "delta_TMm_JJA", "delta_RR_JJA")
-            column_name = c("T", "R", "T", "R")
-            column_icon = c("mode_cool", "mode_cool", "sunny", "sunny")
-            column_icon_font = c("Material Symbols Outlined", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Rounded")
-            column_unit = c("°C", "%", "°C", "%")
+            column_id = c("", "delta_TMm_DJF", "delta_RR_DJF", "delta_TMm_JJA", "delta_RR_JJA")
+            column_name = c("", "T", "R", "T", "R")
+            column_icon = c("", "mode_cool", "mode_cool", "sunny", "sunny")
+            column_icon_font = c("", "Material Symbols Outlined", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Rounded")
+            column_unit = c("", "°C", "%", "°C", "%")
             
-            row_id = c("min",
+            row_id = c("",
+                       "min",
                        "median",
                        "max",
-                       sapply(NarraTRACC, "[", "Chain"))
-            row_name = c("Minimum",
+                       sapply(NarraTRACC, "[", "climateChain"))
+            row_name = c("",
+                         "Minimum",
                          "Médiane",
                          "Maximum",
                          sapply(NarraTRACC, "[", "name"))
-            row_color = c(rep(IPCCgrey35, 3),
+            row_color = c("",
+                          rep(IPCCgrey35, 3),
                           sapply(NarraTRACC, "[", "color"))
 
+
+            get_labels_TeX = function(x, unit, is_unit_plurial, add_unit_space) {
+                unit_suffixed = ifelse(!is_unit_plurial, unit,
+                                ifelse(x != 0, paste0(unit, "s"), unit))
+                result = ifelse(add_unit_space,
+                                paste0("<span style='font-size:4pt'> </span><span style='font-size:6pt'>", unit_suffixed, "</span>"),
+                                paste0("<span style='font-size:6pt'>", unit_suffixed, "</span>"))
+
+                x_text = ifelse(x > 0, paste0("+", x), as.character(x))
+                result = ifelse(x < 0 | x > 0,
+                                paste0("<b>", x_text, "</b>", result, ""),
+                                paste0("<b>", x_text, "</b>"))
+
+                return (result)
+            }
+            
+            xmax = 10
+            ymax = 10
+    
+            dx_left_line = 0.1 
+            dx_left_text = 0.1
+            dx_left_narratrac_text = 0.35
+            dx_left_narratrac_circle = 0.15
             
             dy_column_title = 2
-            dx_column = 1
+            dx_row_title = 2.6
 
-            dx_row_title = 2
-            dy_row = 1
-
+            dx_delta = 0.22
+            dx_seas = 0.3
+            
             nCol = length(column_id) 
-            nRow = length(row_id)            
-
-            print(dataEX_criteria_stat)
+            nRow = length(row_id)
+            dx_column = (xmax-dx_row_title)/(nCol-1)
+            dy_row = (ymax-dy_column_title)/(nRow-1)
+           
             
             table = ggplot() + theme_void() +
                 theme(plot.margin=margin(t=0, r=0,
-                                         b=0, l=0, "mm")) +
-                scale_x_continuous(limits=c(0, 10),
+                                         b=2, l=4, "mm")) +
+                scale_x_continuous(limits=c(0, xmax),
                                    expand=c(0, 0)) +
-                scale_y_continuous(limits=c(0, 10),
+                scale_y_continuous(limits=c(0, ymax),
                                    expand=c(0, 0))
 
-
-
-            
-            # for (rr in 1:nRow) {
-            #     for (cc in 1:nCol) {
-                    
-
-
-                    
-            #     }
-            # }
+            for (rr in 1:nRow) {
+                ytmp = ymax - dy_column_title - dy_row*(rr-1)
+                
+                table = table +
+                    annotate("line",
+                             x=c(dx_left_line, xmax),
+                             y=rep(ytmp, 2),
+                             color=IPCCgrey75,
+                             linewidth=0.3, lineend="round")
+                if (rr > 1) {
+                    if (rr <= 4) {
+                        xtmp = dx_left_line + dx_left_text
+                    } else {
+                        table = table +
+                            annotate("point",
+                                     x=dx_left_line + dx_left_narratrac_circle,
+                                     y=ytmp + dy_row/2,
+                                     color=row_color[rr], shape=16)
+                        xtmp = dx_left_line + dx_left_narratrac_text
+                    }
+                    table = table +
+                        annotate("text",
+                                 x=xtmp,
+                                 y=ytmp + dy_row/2,
+                                 label=row_name[rr],
+                                 vjust=0.5, hjust=0,
+                                 size=3, family="Lato",
+                                 color=IPCCgrey23)
+                }
+                for (cc in 2:nCol) {
+                    xtmp = dx_row_title + (cc-1)*dx_column
+                    if (rr == 1) {
+                        table = table +
+                            annotate("text",
+                                     x=xtmp - dx_column/2 - dx_delta,
+                                     y=ytmp + dy_column_title/2,
+                                     label="Δ",
+                                     size=3, hjust=0.5, vjust=0.5,
+                                     family="Noto Sans",
+                                     color=IPCCgrey23) +
+                            annotate("text",
+                                     x=xtmp - dx_column/2,
+                                     y=ytmp + dy_column_title/2,
+                                     label=column_name[cc],
+                                     vjust=0.5, hjust=0.5,
+                                     size=3, family="Lato",
+                                     color=IPCCgrey23) +
+                            annotate("text",
+                                     x=xtmp - dx_column/2 + dx_seas,
+                                     y=ytmp + dy_column_title/2,
+                                     label=column_icon[cc],
+                                     size=3, hjust=0.5, vjust=0.7,
+                                     family=column_icon_font[cc],
+                                     color=IPCCgrey40)
+                    } else {
+                        if (rr <= 4) {
+                            id = paste0(row_id[rr], "_", column_id[cc])
+                            value = dataEX_criteria_stat_sh_wl[[id]]
+                        } else {
+                            value = dplyr::filter(dataEX_criteria_sh_wl,
+                                                  climateChain == row_id[rr])[[column_id[cc]]]
+                        }
+                        
+                        value = signif(value, 2)
+                        
+                        if (column_name[cc] == "T") {
+                            value = get_labels(x, unit="°C",
+                                               is_unit_plurial=FALSE,
+                                               add_unit_space=TRUE,
+                                               Palette=get_IPCC_Palette("temperature_10"),
+                                               dColor=1)
+                            
+                        } else if (column_name[cc] == "R") {
+                            value = get_labels(x, unit="%",
+                                               is_unit_plurial=FALSE,
+                                               add_unit_space=TRUE,
+                                               Palette=get_IPCC_Palette("hydro_10"),
+                                               dColor=1)
+                        }
+                        
+                        # value = paste0(value, " \\small{", column_unit[cc], "}")
+                        
+                        table = table +
+                            annotate("text",
+                                     x=xtmp - dx_column/2,
+                                     y=ytmp + dy_row/2,
+                                     label=latex2exp::TeX(value),
+                                     vjust=0.5, hjust=0.5,
+                                     size=3, family="Lato",
+                                     color=IPCCgrey35)
+                    }                
+                }
+            }
             
             
 
@@ -846,7 +952,7 @@ sheet_projection_secteur = function (Stations,
                 info = info +             
                     annotate("text",
                              x=0.5,
-                             y=0.9 - dy_newline*(k-1),
+                             y=0.98 - dy_newline*(k-1),
                              label=info_text[k],
                              size=2, hjust=0.5, vjust=1,
                              family="Lato",
@@ -1155,7 +1261,7 @@ sheet_projection_secteur = function (Stations,
             #                 width=paper_size[1],
             #                 height=paper_size[2], units='cm',
             #                 dpi=300,
-            #                 device=cairo_pdf)
+            #                 device=pdf)
 
 
             
