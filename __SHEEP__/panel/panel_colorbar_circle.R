@@ -24,12 +24,12 @@
 panel_colorbar_circle = function (bin,
                                   Palette,
                                   size_circle=1,
-                                  d_line=0.5,
                                   linewidth=0.2,
+                                  text_size=2,
+                                  d_left_shift=0.05,
+                                  d_line=0.5,
                                   d_space=0.5,
                                   d_text=0.5,
-                                  text_size=2,
-                                  # text_fontface="bold",
                                   label=NULL,
                                   ncharLim=4,
                                   stroke=NULL,
@@ -64,7 +64,7 @@ panel_colorbar_circle = function (bin,
     }
     
     plot = plot +
-        geom_point(aes(x=rep(d_line/2, nColor),
+        geom_point(aes(x=rep((d_line+d_left_shift)/2, nColor),
                        y=seq(0, nColor-1, by=1)),
                    fill=Palette, color=color, shape=shape,
                    stroke=stroke,
@@ -79,29 +79,32 @@ panel_colorbar_circle = function (bin,
         if (!on_circle) {
             plot = plot +
                 annotate("line",
-                         x=c(0, d_line),
+                         x=c(d_left_shift, d_line),
                          y=c((i-1)-1/2,
                          (i-1)-1/2),
+                         lineend="round",
                          linewidth=linewidth, color=colorLine)
             plot = plot +
                 annotate("text",
-                         x=d_line+d_space,
+                         x=d_left_shift+d_line+d_space,
                          y=(i-1)-1/2,
                          label=TeX(Label[i]),
                          size=text_size,
                          hjust=0, vjust=0.5,
                          # fontface=text_fontface,
+                         family="Lato",
                          color=colorText)
 
         } else {
             plot = plot +
                 annotate("text",
-                         x=d_line+d_space,
+                         x=d_left_shift+d_line+d_space,
                          y=(i-1),
                          label=TeX(Label[i]),
                          size=text_size,
                          hjust=0, vjust=0.5,
                          # fontface=text_fontface,
+                         family="Lato",
                          color=colorText)
         }
     }
