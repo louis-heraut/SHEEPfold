@@ -34,6 +34,7 @@ sheet_projection_secteur = function (Stations,
                                      logo_info="",
                                      Pages=NULL,
                                      Shapefiles=NULL,
+                                     Shapefiles_mini=NULL,
                                      figdir="",
                                      verbose=FALSE) {
 
@@ -98,6 +99,7 @@ sheet_projection_secteur = function (Stations,
         Stations_sh = filter(Stations, substr(code, 1, 2) == sh)
         dataEX_criteria_sh = filter(dataEX_criteria, SH == sh)
 
+        secteurHydro_shp_mini = Shapefiles_mini$secteurHydro[Shapefiles_mini$secteurHydro$CdSecteurH == sh,]
         secteurHydro_shp = Shapefiles$secteurHydro[Shapefiles$secteurHydro$CdSecteurH == sh,]
         
         Chain = unique(Projections$Chain)
@@ -122,14 +124,14 @@ sheet_projection_secteur = function (Stations,
 
             ### Info ________________________________________________________
             info_plan = matrix(c(
-                "map", "title", "logo",
-                "map", "legend", "logo"
+                "minimap", "title", "logo",
+                "minimap", "legend", "logo"
             ), ncol=3, byrow=TRUE)
 
             info_title_height = 1.5
             info_legend_height = 1
             
-            info_map_width = 1
+            info_minimap_width = 1
             info_title_width = 2
             info_logo_width = 1
 
@@ -140,7 +142,7 @@ sheet_projection_secteur = function (Stations,
             xlim = c(90000, 1250000)
             ylim = c(6040000, 7120000)
 
-            margin_map = margin(t=0, r=0, b=2, l=0, unit="mm")
+            margin_minimap = margin(t=0, r=0, b=2, l=0, unit="mm")
             
             echelle = c(0, 100, 250)
             x_echelle_pct = 2
@@ -155,28 +157,28 @@ sheet_projection_secteur = function (Stations,
             
             cf = coord_fixed()
             cf$default = TRUE
-            map = ggplot() + theme_void() + cf +
-                theme(plot.margin=margin_map) +
-                geom_sf(data=Shapefiles$france,
+            minimap = ggplot() + theme_void() + cf +
+                theme(plot.margin=margin_minimap) +
+                geom_sf(data=Shapefiles_mini$france,
                         color=NA,
                         fill=IPCCgrey97) +
-                geom_sf(data=Shapefiles$river,
+                geom_sf(data=Shapefiles_mini$river,
                         color="white",
                         alpha=1,
                         fill=NA,
                         linewidth=0.65,
                         na.rm=TRUE) +
-                geom_sf(data=Shapefiles$river,
+                geom_sf(data=Shapefiles_mini$river,
                         color=INRAElightcyan,
                         alpha=1,
                         fill=NA,
                         linewidth=0.3,
                         na.rm=TRUE) +
-                geom_sf(data=Shapefiles$bassinHydro,
+                geom_sf(data=Shapefiles_mini$bassinHydro,
                         color=IPCCgrey85,
                         fill=NA,
                         size=0.25) +
-                geom_sf(data=Shapefiles$france,
+                geom_sf(data=Shapefiles_mini$france,
                         color=IPCCgrey40,
                         fill=NA,
                         linewidth=0.3)
@@ -187,7 +189,7 @@ sheet_projection_secteur = function (Stations,
             ymin_km = gpct(max(c(y_echelle_pct-ymin_km_shift, 0)), ylim, shift=TRUE)
             ymax = ymin + gpct(echelle_tick_height, ylim)
 
-            map = map +
+            minimap = minimap +
                 geom_line(aes(x=c(xmin, max(xint)+xmin),
                               y=c(ymin, ymin)),
                           color=IPCCgrey40, size=echelle_line_size,
@@ -199,7 +201,7 @@ sheet_projection_secteur = function (Stations,
                          color=IPCCgrey40, size=echelle_km_size)
 
             for (x in xint) {
-                map = map +
+                minimap = minimap +
                     annotate("segment",
                              x=x+xmin, xend=x+xmin, y=ymin, yend=ymax,
                              color=IPCCgrey40, size=echelle_line_size,
@@ -211,24 +213,24 @@ sheet_projection_secteur = function (Stations,
                              color=IPCCgrey40, size=echelle_size)
             }
 
-            map = map +
-                geom_sf(data=secteurHydro_shp,
+            minimap = minimap +
+                geom_sf(data=secteurHydro_shp_mini,
                         color="white",
                         fill=NA,
                         linewidth=1.05) +
-                geom_sf(data=secteurHydro_shp,
+                geom_sf(data=secteurHydro_shp_mini,
                         color=wl["color"],
                         fill=NA,
                         linewidth=0.45)
 
-            map = map +
+            minimap = minimap +
                 coord_sf(xlim=xlim, ylim=ylim,
                          expand=FALSE)
 
             info_herd = add_sheep(info_herd,
-                                  sheep=map,
-                                  id="map",
-                                  width=info_map_width,
+                                  sheep=minimap,
+                                  id="minimap",
+                                  width=info_minimap_width,
                                   verbose=verbose)
 
             #### Info text _______________________________________________________
@@ -790,7 +792,6 @@ sheet_projection_secteur = function (Stations,
                                               verbose=verbose)
 
 ##### table ___________________________________________________________
-
             column_id = c("", "delta_TMm_DJF", "delta_RR_DJF", "delta_TMm_JJA", "delta_RR_JJA")
             column_name = c("", "T", "R", "T", "R")
             column_icon = c("", "mode_cool", "mode_cool", "sunny", "sunny")
@@ -1029,8 +1030,8 @@ sheet_projection_secteur = function (Stations,
 
 ### Hydro map ________________________________________________________
             hydroMap_plan = matrix(c(
-                "etiage_title", "recharge_title", "crue_title", "colorbar",
-                "etiage_map",   "recharge_map",   "crue_map",   "colorbar",
+                "title_etiage", "title_recharge", "title_crue", "colorbar",
+                "map_etiage",   "map_recharge",   "map_crue",   "colorbar",
                 "legend",       "legend",         "legend",     "colorbar"
             ), ncol=4, byrow=TRUE)
 
@@ -1047,6 +1048,58 @@ sheet_projection_secteur = function (Stations,
             hydroMap_herd = bring_grass(verbose=verbose)
             hydroMap_herd = plan_of_herd(hydroMap_herd, hydroMap_plan,
                                          verbose=verbose)
+
+            margin_map = margin(t=0, r=0, b=0, l=0, unit="mm")
+            
+            cf = coord_fixed()
+            cf$default = TRUE
+            map = ggplot() + theme_void() + cf +
+                theme(plot.margin=margin_map) +
+                geom_sf(data=Shapefiles$france,
+                        color=NA,
+                        fill=IPCCgrey97) +
+                geom_sf(data=Shapefiles$river,
+                        color="white",
+                        alpha=1,
+                        fill=NA,
+                        linewidth=0.65,
+                        na.rm=TRUE) +
+                geom_sf(data=Shapefiles$river,
+                        color=INRAElightcyan,
+                        alpha=1,
+                        fill=NA,
+                        linewidth=0.3,
+                        na.rm=TRUE) +
+                geom_sf(data=Shapefiles$bassinHydro,
+                        color=IPCCgrey85,
+                        fill=NA,
+                        size=0.25) +
+                geom_sf(data=Shapefiles$france,
+                        color=IPCCgrey40,
+                        fill=NA,
+                        linewidth=0.3)
+            
+            map = map +
+                geom_sf(data=secteurHydro_shp,
+                        color="white",
+                        fill=NA,
+                        linewidth=1.05) +
+                geom_sf(data=secteurHydro_shp,
+                        color=wl["color"],
+                        fill=NA,
+                        linewidth=0.45)
+
+            bbox = sf::st_bbox(secteurHydro_shp)
+            margin_factor = 0.05
+            x_range = bbox["xmax"] - bbox["xmin"]
+            y_range = bbox["ymax"] - bbox["ymin"]
+            xlim = c(bbox["xmin"] - x_range*margin_factor,
+                      bbox["xmax"] + x_range*margin_factor)
+            ylim = c(bbox["ymin"] - y_range*margin_factor,
+                      bbox["ymax"] + y_range*margin_factor)
+
+            map = map + coord_sf(xlim=xlim, ylim=ylim, expand=FALSE)
+            
 
 #### etiage __________________________________________________________
             title_text = paste0("(", letters[id_letter], ") \\textbf{VCN10} - Changements relatifs de l'intensité des étiages (%)")
@@ -1076,18 +1129,20 @@ sheet_projection_secteur = function (Stations,
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=title,
-                                      id="etiage_title",
+                                      id="title_etiage",
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
+            map_etiage = map
+            
             hydroMap_herd = add_sheep(hydroMap_herd,
-                                      sheep=contour(),
-                                      id="etiage_map",
+                                      sheep=map_etiage,
+                                      id="map_etiage",
                                       height=hydroMap_variable_map_height,
                                       width=hydroMap_variable_width,
                                       verbose=verbose)
 
-            #### recharge ________________________________________________________
+#### recharge ________________________________________________________
             title_text = paste0("(", letters[id_letter], ") \\textbf{Recharge} - Changements relatifs de la recharge annuelle (%)")
             id_letter = id_letter + 1
 
@@ -1115,18 +1170,20 @@ sheet_projection_secteur = function (Stations,
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=title,
-                                      id="recharge_title",
+                                      id="title_recharge",
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
+            map_recharge = map
+            
             hydroMap_herd = add_sheep(hydroMap_herd,
-                                      sheep=contour(),
-                                      id="recharge_map",
+                                      sheep=map_recharge,
+                                      id="map_recharge",
                                       height=hydroMap_variable_map_height,
                                       width=hydroMap_variable_width,
                                       verbose=verbose)
 
-            #### crue ____________________________________________________________
+#### crue ____________________________________________________________
             title_text = paste0("(", letters[id_letter], ") \\textbf{QJXA} - Changements relatifs de l'intensité des crues (%)")
             id_letter = id_letter + 1
 
@@ -1154,13 +1211,15 @@ sheet_projection_secteur = function (Stations,
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=title,
-                                      id="crue_title",
+                                      id="title_crue",
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
+            map_crue = map
+            
             hydroMap_herd = add_sheep(hydroMap_herd,
-                                      sheep=contour(),
-                                      id="crue_map",
+                                      sheep=map_crue,
+                                      id="map_crue",
                                       height=hydroMap_variable_map_height,
                                       width=hydroMap_variable_width,
                                       verbose=verbose)
@@ -1276,7 +1335,7 @@ sheet_projection_secteur = function (Stations,
                              verbose=verbose)
 
 
-            ### Hydro QM _________________________________________________________
+### Hydro QM _________________________________________________________
             hydroQM_plan = matrix(c(
                 "title",      "title",         "title",         "title",
                 "void",       "river_name_1",  "river_name_2",  "river_name_3", 
@@ -1302,7 +1361,7 @@ sheet_projection_secteur = function (Stations,
                                      verbose=verbose)
 
 #### title ___________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") \\textbf{QM} - Altération du régime hydrologique pour trois bassins de surface différente et avec une bonne qualité de simulation")
+            title_text = paste0("(", letters[id_letter], ") \\textbf{QM} - Altération du régime hydrologique (débit mensuel) pour trois bassins de surface différente et avec une bonne qualité de simulation")
             id_letter = id_letter + 1
             
             title = ggplot() + theme_void() +
@@ -1326,19 +1385,79 @@ sheet_projection_secteur = function (Stations,
                                      verbose=verbose)
 
 #### informations référence ___________________________________________________________
+            reference = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0.2, y=0.5,
+                         label=latex2exp::TeX("\\textbf{Période de RÉFÉRENCE}"),
+                         size=2.3, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35) +
+                annotate("text",
+                         x=0.48, y=0.5,
+                         label=latex2exp::TeX("\\textbf{1976-2005}"),
+                         size=2.3, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35) +
+                annotate("text",
+                         x=0.8, y=0.5,
+                         label=latex2exp::TeX("Débit mensuel (m$^3$/s)"),
+                         size=2.3, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35)
+            
             hydroQM_herd = add_sheep(hydroQM_herd,
-                                     sheep=contour(),
+                                     sheep=reference,
                                      id="ref_info",
                                      width=hydroQM_info_width,
                                      verbose=verbose)
 
 #### informations changements ___________________________________________________________
+            delta = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=0, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, 1),
+                                   expand=c(0, 0)) +
+                annotate("text",
+                         x=0.2, y=0.5,
+                         label=latex2exp::TeX("\\textbf{FRANCE +4\\small{°C}}"),
+                         size=2.3, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35) +
+                annotate("text",
+                         x=0.55, y=0.5,
+                         label=latex2exp::TeX("Changements du"),
+                         size=2.3, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35) +
+                annotate("text",
+                         x=0.8, y=0.5,
+                         label=latex2exp::TeX("débit mensuel (%)"),
+                         size=2.3, hjust=0.5, vjust=0.5,
+                         angle=90,
+                         family="Lato",
+                         color=IPCCgrey35)
+
             hydroQM_herd = add_sheep(hydroQM_herd,
-                                     sheep=contour(),
+                                     sheep=delta,
                                      id="delta_info",
                                      width=hydroQM_info_width,
                                      verbose=verbose)
+
             
+#### rivières ___________________________________________________________
             Rivers = 1:3
             nRiver = length(Rivers)
             for (k in 1:nRiver) {
@@ -1444,8 +1563,8 @@ sheet_projection_secteur = function (Stations,
                              y=0.7 - dy_newline*(k-1),
                              label=latex2exp::TeX(foot_text[k]),
                              size=2, hjust=0, vjust=1,
-                             family="Lato",
-                             color=IPCCgrey50)
+                             family="Raleway",
+                             color=TRACCblue)
             }
 
             foot_info = paste0("\\small{", format(Sys.Date(), "%B %Y"), "\\; - \\;}\\textbf{\\small{n°}", Secteur$id, "}")
