@@ -23,10 +23,12 @@
 
 sheet_projection_secteur = function (Stations,
                                      Secteur,
-                                     dataEX_serie,
-                                     metaEX_serie,
-                                     dataEX_criteria,
-                                     metaEX_criteria,
+                                     dataEX_criteria_climate,
+                                     dataEX_criteria_hydro,
+                                     dataEX_serie_hydro,
+                                     # metaEX_criteria_climate,
+                                     # metaEX_criteria_hydro,
+                                     # metaEX_serie_hydro,
                                      WL,
                                      NarraTRACC,
                                      delta_prob=0, 
@@ -64,10 +66,10 @@ sheet_projection_secteur = function (Stations,
     dColor = 1
     nColor = length(Palette_temperature)
     
-    is_numeric = names(dataEX_criteria)[sapply(dataEX_criteria, is.numeric)]
+    is_numeric = names(dataEX_criteria_climate)[sapply(dataEX_criteria_climate, is.numeric)]
     
-    dataEX_criteria_stat =
-        dplyr::summarise(dplyr::group_by(dataEX_criteria,
+    dataEX_criteria_climate_stat =
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_climate,
                                          SH, GWL),
                          dplyr::across(is_numeric,
                                        ~quantile(.x, delta_prob,
@@ -89,16 +91,21 @@ sheet_projection_secteur = function (Stations,
 
     for (i in 1:nSH) {
         sh = SH[i]
-
-        sh = "A3"
+        if (verbose) {
+            print(paste0(i, "/", nSH, " so ", round(i/nSH*100, 1), "% done -> ", sh))
+        }
         
-        print(paste0(i, "/", nSH, " so ", round(i/nSH*100, 1), "% done -> ", sh))
-
         Secteur = Secteurs[Secteurs$id_secteur == sh,]
         
-        Stations_sh = filter(Stations, substr(code, 1, 2) == sh)
-        dataEX_criteria_sh = filter(dataEX_criteria, SH == sh)
-
+        Stations_sh = dplyr::filter(Stations, substr(code, 1, 2) == sh)
+        
+        dataEX_criteria_climate_sh = dplyr::filter(dataEX_criteria_climate, SH == sh)
+        dataEX_criteria_hydro_sh = dplyr::filter(dataEX_criteria_hydro, SH == sh)
+        dataEX_serie_hydro_sh = dataEX_serie_hydro
+        for (j in 1:length(dataEX_serie_hydro_sh)) {
+            dataEX_serie_hydro_sh[[j]] = dplyr::filter(dataEX_serie_hydro_sh[[j]], SH == sh)
+        }
+        
         secteurHydro_shp_mini = Shapefiles_mini$secteurHydro[Shapefiles_mini$secteurHydro$CdSecteurH == sh,]
         secteurHydro_shp = Shapefiles$secteurHydro[Shapefiles$secteurHydro$CdSecteurH == sh,]
         
@@ -113,8 +120,14 @@ sheet_projection_secteur = function (Stations,
             print(paste0(j, "/", nWL, " so ", round(j/nWL*100, 1), "% done -> ", wl["RWL"]))
 
             
-            dataEX_criteria_sh_wl = dplyr::filter(dataEX_criteria, SH==sh, GWL==wl["GWLclean"])
-            dataEX_criteria_stat_sh_wl = dplyr::filter(dataEX_criteria_stat, SH==sh, GWL==wl["GWLclean"])
+            dataEX_criteria_climate_sh_wl = dplyr::filter(dataEX_criteria_climate_sh, GWL == wl["GWLclean"])
+            dataEX_criteria_hydro_sh_wl = dplyr::filter(dataEX_criteria_hydro_sh, GWL == wl["GWLclean"])
+            dataEX_serie_hydro_sh_wl = dataEX_serie_hydro_sh
+            for (j in 1:length(dataEX_serie_hydro_sh_wl)) {
+                dataEX_serie_hydro_sh_wl[[j]] = dplyr::filter(dataEX_serie_hydro_sh_wl[[j]], GWL == wl["GWLclean"])
+            }
+
+            dataEX_criteria_climate_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_stat, SH==sh, GWL==wl["GWLclean"])
     
             
             ## PAGE _________________________________________________________
@@ -627,7 +640,7 @@ sheet_projection_secteur = function (Stations,
                 return (result)
             }
             
-            panel_delta_variable = function (dataEX_criteria_sh_wl,
+            panel_delta_variable = function (dataEX_criteria_climate_sh_wl,
                                              season) {
 
                 expand = function (X, fact=0.05) {
@@ -655,12 +668,12 @@ sheet_projection_secteur = function (Stations,
                     return (result)
                 }
 
-                TMm_range = c(min(dataEX_criteria_sh_wl[[paste0("delta_TMm_", season)]]),
-                              max(dataEX_criteria_sh_wl[[paste0("delta_TMm_", season)]]))
+                TMm_range = c(min(dataEX_criteria_climate_sh_wl[[paste0("delta_TMm_", season)]]),
+                              max(dataEX_criteria_climate_sh_wl[[paste0("delta_TMm_", season)]]))
                 TMm_range = expand(TMm_range)
                 
-                RR_range = c(min(dataEX_criteria_sh_wl[[paste0("delta_RR_", season)]]),
-                             max(dataEX_criteria_sh_wl[[paste0("delta_RR_", season)]]))
+                RR_range = c(min(dataEX_criteria_climate_sh_wl[[paste0("delta_RR_", season)]]),
+                             max(dataEX_criteria_climate_sh_wl[[paste0("delta_RR_", season)]]))
                 RR_range = expand(RR_range)
                 
                 delta_variable = ggplot() +
@@ -697,25 +710,25 @@ sheet_projection_secteur = function (Stations,
                                        expand=c(0, 0))
 
                 NarraTRACC_climateChains = sapply(NarraTRACC, "[", "climateChain")
-                dataEX_criteria_sh_wl_NO_narratrac =
-                    dplyr::filter(dataEX_criteria_sh_wl,
+                dataEX_criteria_climate_sh_wl_NO_narratrac =
+                    dplyr::filter(dataEX_criteria_climate_sh_wl,
                                   !(climateChain %in% NarraTRACC_climateChains))
 
                 delta_variable = delta_variable +
-                    geom_point(data=dataEX_criteria_sh_wl_NO_narratrac,
+                    geom_point(data=dataEX_criteria_climate_sh_wl_NO_narratrac,
                                aes(x=get(paste0("delta_TMm_", season)),
                                    y=get(paste0("delta_RR_", season))),
                                size=1, color=IPCCgrey67)
 
                 for (k in 1:nNarraTRACC) {
                     narratrac = NarraTRACC[[k]]
-                    dataEX_criteria_sh_wl_narratrac = dplyr::filter(dataEX_criteria_sh_wl, climateChain == narratrac["climateChain"])
+                    dataEX_criteria_climate_sh_wl_narratrac = dplyr::filter(dataEX_criteria_climate_sh_wl, climateChain == narratrac["climateChain"])
                     delta_variable = delta_variable +
-                        geom_point(data=dataEX_criteria_sh_wl_narratrac,
+                        geom_point(data=dataEX_criteria_climate_sh_wl_narratrac,
                                    aes(x=get(paste0("delta_TMm_", season)),
                                        y=get(paste0("delta_RR_", season))),
                                    size=1.4, color=IPCCgrey97) + 
-                    geom_point(data=dataEX_criteria_sh_wl_narratrac,
+                    geom_point(data=dataEX_criteria_climate_sh_wl_narratrac,
                                    aes(x=get(paste0("delta_TMm_", season)),
                                        y=get(paste0("delta_RR_", season))),
                                    size=1, color=narratrac["color"])
@@ -724,7 +737,7 @@ sheet_projection_secteur = function (Stations,
                 return (delta_variable)
             }
 
-            delta_variable = panel_delta_variable(dataEX_criteria_sh_wl, "DJF")
+            delta_variable = panel_delta_variable(dataEX_criteria_climate_sh_wl, "DJF")
     
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=delta_variable,
@@ -762,7 +775,7 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 
-            delta_variable = panel_delta_variable(dataEX_criteria_sh_wl, "JJA")
+            delta_variable = panel_delta_variable(dataEX_criteria_climate_sh_wl, "JJA")
             
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=delta_variable,
@@ -927,9 +940,9 @@ sheet_projection_secteur = function (Stations,
                     } else {
                         if (rr <= 4) {
                             id = paste0(row_id[rr], "_", column_id[cc])
-                            value = dataEX_criteria_stat_sh_wl[[id]]
+                            value = dataEX_criteria_climate_stat_sh_wl[[id]]
                         } else {
-                            value = dplyr::filter(dataEX_criteria_sh_wl,
+                            value = dplyr::filter(dataEX_criteria_climate_sh_wl,
                                                   climateChain == row_id[rr])[[column_id[cc]]]
                         }
 
@@ -1049,45 +1062,45 @@ sheet_projection_secteur = function (Stations,
             hydroMap_herd = plan_of_herd(hydroMap_herd, hydroMap_plan,
                                          verbose=verbose)
 
-            margin_map = margin(t=0, r=0, b=0, l=0, unit="mm")
+            margin_map = margin(t=0, r=1, b=0, l=1, unit="mm")
             
             cf = coord_fixed()
             cf$default = TRUE
             map = ggplot() + theme_void() + cf +
                 theme(plot.margin=margin_map) +
+                
+                geom_sf(data=Shapefiles$europe,
+                        color=NA, alpha=0.35,
+                        fill=IPCCgrey97) +
+                
                 geom_sf(data=Shapefiles$france,
                         color=NA,
                         fill=IPCCgrey97) +
                 geom_sf(data=Shapefiles$river,
-                        color="white",
-                        alpha=1,
-                        fill=NA,
-                        linewidth=0.65,
-                        na.rm=TRUE) +
-                geom_sf(data=Shapefiles$river,
                         color=INRAElightcyan,
                         alpha=1,
                         fill=NA,
-                        linewidth=0.3,
+                        linewidth=0.28,
                         na.rm=TRUE) +
                 geom_sf(data=Shapefiles$bassinHydro,
                         color=IPCCgrey85,
-                        fill=NA,
+                        fill=NA, lineend="round",
                         size=0.25) +
+                
+                geom_sf(data=Shapefiles$europe,
+                        color=IPCCgrey50, alpha=0.6,
+                        fill=NA, lineend="round",
+                        linewidth=0.27) +
+                
                 geom_sf(data=Shapefiles$france,
+                        color=IPCCgrey50,
+                        fill=NA, lineend="round",
+                        linewidth=0.3) +
+                
+                geom_sf(data=secteurHydro_shp,
                         color=IPCCgrey40,
-                        fill=NA,
-                        linewidth=0.3)
-            
-            map = map +
-                geom_sf(data=secteurHydro_shp,
-                        color="white",
-                        fill=NA,
-                        linewidth=1.05) +
-                geom_sf(data=secteurHydro_shp,
-                        color=wl["color"],
-                        fill=NA,
-                        linewidth=0.45)
+                        fill=NA, lineend="round",
+                        linewidth=0.48)
 
             bbox = sf::st_bbox(secteurHydro_shp)
             margin_factor = 0.05
@@ -1133,7 +1146,14 @@ sheet_projection_secteur = function (Stations,
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
+
+
+            dataEX_criteria_hydro_VCN10 = dplyr::select(dataEX_criteria_hydro, where(is.character), deltaVCN10)
+
             map_etiage = map
+
+
+            
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_etiage,
