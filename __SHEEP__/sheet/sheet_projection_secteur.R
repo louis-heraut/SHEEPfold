@@ -62,25 +62,28 @@ sheet_projection_secteur = function (Stations,
         "foot"
     ), ncol=1, byrow=TRUE)
 
+    NarraTRACC_Chain = sapply(NarraTRACC, "[", "Chain")
+    
     Palette_hydro = get_IPCC_Palette("hydro_10")
     Palette_temperature = get_IPCC_Palette("temperature_10")
     dColor = 1
     nColor = length(Palette_temperature)
+    Palette_bin = dataSHEEP::compute_colorBin(-60, 60, 10, center=0)
+    Palette_layers = c(4, 3, 2, 1, 1, 2, 3, 4)
     
-    is_numeric = names(dataEX_criteria_climate)[sapply(dataEX_criteria_climate, is.numeric)]
-    
+    climate_criteria_cols = names(dataEX_criteria_climate)[sapply(dataEX_criteria_climate, is.numeric)]
     dataEX_criteria_climate_stat =
         dplyr::summarise(dplyr::group_by(dataEX_criteria_climate,
                                          SH, GWL),
-                         dplyr::across(is_numeric,
+                         dplyr::across(climate_criteria_cols,
                                        ~quantile(.x, delta_prob,
                                                  na.rm=TRUE),
                                        .names="min_{.col}"),
-                         dplyr::across(is_numeric,
+                         dplyr::across(climate_criteria_cols,
                                        ~quantile(.x, 0.5,
                                                  na.rm=TRUE),
                                        .names="median_{.col}"),
-                         dplyr::across(is_numeric,
+                         dplyr::across(climate_criteria_cols,
                                        ~quantile(.x, 1-delta_prob,
                                                  na.rm=TRUE),
                                        .names="max_{.col}"))
@@ -91,43 +94,67 @@ sheet_projection_secteur = function (Stations,
                                          "BC", "HM",
                                          sep="_", remove=FALSE)
 
-
-
+    hydro_criteria_cols = names(dataEX_criteria_hydro)[sapply(dataEX_criteria_hydro, is.numeric)]
     dataEX_criteria_hydro_conf =
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro,
                                          code, GWL, EXP),
-                         dplyr::across(.cols=where(is.numeric),
+                         dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~sum(.x>0)/dplyr::n()*100,
                                        .names="{.col}_above_pct"),
-                         dplyr::across(.cols=where(is.numeric),
+                         dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~sum(.x<0)/dplyr::n()*100,
                                        .names="{.col}_below_pct"),
                          .groups="drop")
-
+    
     dataEX_criteria_hydro_mean = 
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro,
                                          code, SH, GWL, EXP, GCM, RCM, BC),
-                         dplyr::across(.cols=where(is.numeric),
+                         dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~mean(.x, na.rm=TRUE)),
                          .groups="drop")
     dataEX_criteria_hydro_mean = 
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_mean,
                                          code, SH, GWL, EXP, GCM, RCM),
-                         dplyr::across(.cols=where(is.numeric),
+                         dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~mean(.x, na.rm=TRUE)),
                          .groups="drop")
     dataEX_criteria_hydro_mean = 
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_mean,
                                          code, SH, GWL, EXP, GCM),
-                         dplyr::across(.cols=where(is.numeric),
+                         dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~mean(.x, na.rm=TRUE)),
                          .groups="drop")
     dataEX_criteria_hydro_mean = 
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_mean,
                                          code, SH, GWL, EXP),
-                         dplyr::across(.cols=where(is.numeric),
+                         dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~mean(.x, na.rm=TRUE)),
                          .groups="drop")  
+
+
+    for (cc in 1:length(dataEX_serie_hydro)) {
+        dataEX_serie_hydro[[cc]] = tidyr::unite(dataEX_serie_hydro[[cc]],
+                                                "Chain",
+                                                "EXP", "GCM", "RCM",
+                                                "BC", "HM",
+                                                sep="_", remove=FALSE)
+    }
+
+    delta_prob = 0.05
+
+    hydro_serie_cols = names(dataEX_serie_hydro$deltaQMA)[sapply(dataEX_serie_hydro$deltaQMA, is.numeric)]
+    dataEX_serie_hydro_deltaQMA_prob =
+        dplyr::summarise(dplyr::group_by(dataEX_serie_hydro$deltaQMA,
+                                         GWL, EXP, code, date),
+                         dplyr::across(hydro_serie_cols,
+                                       ~quantile(.x, delta_prob,
+                                                 na.rm=TRUE),
+                                       .names="min_{.col}"),
+                         dplyr::across(hydro_serie_cols,
+                                       ~quantile(.x, 1-delta_prob,
+                                                 na.rm=TRUE),
+                                       .names="max_{.col}"))
+
     
     SH = unique(substr(Stations$code, 1, 2))
     nSH = length(SH) 
@@ -162,9 +189,9 @@ sheet_projection_secteur = function (Stations,
                                                         SH==sh, GWL == wl["GWLclean"])
 
             dataEX_serie_hydro_sh_wl = dataEX_serie_hydro
-            for (j in 1:length(dataEX_serie_hydro_sh_wl)) {
-                dataEX_serie_hydro_sh_wl[[j]] = dplyr::filter(dataEX_serie_hydro_sh_wl[[j]],
-                                                              SH==sh, GWL == wl["GWLclean"])
+            for (cc in 1:length(dataEX_serie_hydro_sh_wl)) {
+                dataEX_serie_hydro_sh_wl[[cc]] = dplyr::filter(dataEX_serie_hydro_sh_wl[[cc]],
+                                                               SH==sh, GWL == wl["GWLclean"])
             }
 
             dataEX_criteria_climate_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_stat,
@@ -174,6 +201,9 @@ sheet_projection_secteur = function (Stations,
             dataEX_criteria_hydro_mean_sh_wl = dplyr::filter(dataEX_criteria_hydro_mean,
                                                              SH == sh, GWL==wl["GWLclean"])
             
+            dataEX_serie_hydro_deltaQMA_prob_wl =
+                dplyr::filter(dataEX_serie_hydro_deltaQMA_prob,
+                              GWL==wl["GWLclean"])
             
             ## PAGE _________________________________________________________
             herd = bring_grass(verbose=verbose)
@@ -1129,30 +1159,37 @@ sheet_projection_secteur = function (Stations,
                         fill=IPCCgrey97) +
                 
                 geom_sf(data=Shapefiles$river,
-                        color=INRAElightcyan,
-                        alpha=0.5,
+                        color="#d1ecec",
                         fill=NA,
-                        linewidth=0.28,
+                        linewidth=0.22,
                         na.rm=TRUE) +
                 geom_sf(data=rivers_in_secteur,
                         color=INRAElightcyan,
                         fill=NA,
                         linewidth=0.28,
                         na.rm=TRUE) +
-                geom_sf(data=Shapefiles$bassinHydro,
-                        color=IPCCgrey85,
+                
+                
+                
+                geom_sf(data=Shapefiles$secteurHydro,
+                        color=IPCCgrey80,
                         fill=NA, lineend="round",
-                        size=0.25) +
+                        linewidth=0.28) +
+                
+                geom_sf(data=Shapefiles$bassinHydro,
+                        color=IPCCgrey67,
+                        fill=NA, lineend="round",
+                        linewidth=0.29) +
                 
                 geom_sf(data=Shapefiles$france,
-                        color=IPCCgrey50,
+                        color=IPCCgrey48,
                         fill=NA, lineend="round",
-                        linewidth=0.3) +
+                        linewidth=0.30) +
                 
                 geom_sf(data=secteurHydro_shp,
-                        color=IPCCgrey40,
+                        color=IPCCgrey50,
                         fill=NA, lineend="round",
-                        linewidth=0.48)
+                        linewidth=0.45)
             
             bbox = sf::st_bbox(secteurHydro_shp)
             aspect_plot = 6.5/8.5
@@ -1221,13 +1258,12 @@ sheet_projection_secteur = function (Stations,
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
-
             dataEX_criteria_hydro_plot_sh_wl =
                 dplyr::left_join(dplyr::select(dataEX_criteria_hydro_mean_sh_wl,
                                                code, deltaVCN10),
                                  dplyr::select(dataEX_criteria_hydro_conf_sh_wl,
-                                               code, above_pct_deltaVCN10,
-                                               below_pct_deltaVCN10),
+                                               code, deltaVCN10_above_pct,
+                                               deltaVCN10_below_pct),
                                  by="code")
             dataEX_criteria_hydro_plot_sh_wl =
                 dplyr::left_join(dataEX_criteria_hydro_plot_sh_wl,
@@ -1236,17 +1272,41 @@ sheet_projection_secteur = function (Stations,
 
             
             dataEX_criteria_hydro_plot_sh_wl$shape = 21 #o
+            dataEX_criteria_hydro_plot_sh_wl$size = 1.4
 
-            Ok_above = dataEX_criteria_hydro_plot_sh_wl$above_pct_deltaVCN10 >= limit_conf_pct
-            dataEX_criteria_hydro_plot_sh_wl[Ok_above]$shape = 24 #^
+            Ok_above = dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_above_pct >= limit_conf_pct
+            dataEX_criteria_hydro_plot_sh_wl$shape[Ok_above] = 24 #^
+            dataEX_criteria_hydro_plot_sh_wl$size[Ok_above] = 2
             
-            Ok_below = dataEX_criteria_hydro_plot_sh_wl$below_pct_deltaVCN10 >= limit_conf_pct
-            dataEX_criteria_hydro_plot_sh_wl[Ok_below]$shape = 25 #v
+            Ok_below = dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_below_pct >= limit_conf_pct
+            dataEX_criteria_hydro_plot_sh_wl$shape[Ok_below] = 25 #v
+            dataEX_criteria_hydro_plot_sh_wl$size[Ok_below] = 2
+            
+            res = get_colors(dataEX_criteria_hydro_plot_sh_wl$deltaVCN10,
+                              upBin=Palette_bin$upBin,
+                              lowBin=Palette_bin$lowBin,
+                              Palette=Palette_hydro,
+                              Palette_layers=Palette_layers)
+            dataEX_criteria_hydro_plot_sh_wl$fill = res$colors
+            dataEX_criteria_hydro_plot_sh_wl$layer = res$layers
+
+            layers = as.numeric(levels(factor(dataEX_criteria_hydro_plot_sh_wl$layer)))
             
             map_etiage = map
-            # + 
-                # geom_point()
-            
+            for (l in layers) {
+                dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl, layer==l)
+                if (nrow(dataEX_plot_tmp) == 0) {
+                    next
+                }
+                map_etiage = map_etiage +
+                    annotate("point",
+                             x=dataEX_plot_tmp$XL93_m,
+                             y=dataEX_plot_tmp$YL93_m,
+                             fill=dataEX_plot_tmp$fill,
+                             color=IPCCgrey25, stroke=0.35,
+                             size=dataEX_plot_tmp$size,
+                             shape=dataEX_plot_tmp$shape)
+            }
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_etiage,
@@ -1328,7 +1388,55 @@ sheet_projection_secteur = function (Stations,
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
+            dataEX_criteria_hydro_plot_sh_wl =
+                dplyr::left_join(dplyr::select(dataEX_criteria_hydro_mean_sh_wl,
+                                               code, deltaQJXA),
+                                 dplyr::select(dataEX_criteria_hydro_conf_sh_wl,
+                                               code, deltaQJXA_above_pct,
+                                               deltaQJXA_below_pct),
+                                 by="code")
+            dataEX_criteria_hydro_plot_sh_wl =
+                dplyr::left_join(dataEX_criteria_hydro_plot_sh_wl,
+                                 dplyr::select(Stations, code, XL93_m, YL93_m),
+                                 by="code")
+
+            
+            dataEX_criteria_hydro_plot_sh_wl$shape = 21 #o
+            dataEX_criteria_hydro_plot_sh_wl$size = 1.4
+
+            Ok_above = dataEX_criteria_hydro_plot_sh_wl$deltaQJXA_above_pct >= limit_conf_pct
+            dataEX_criteria_hydro_plot_sh_wl$shape[Ok_above] = 24 #^
+            dataEX_criteria_hydro_plot_sh_wl$size[Ok_above] = 2
+            
+            Ok_below = dataEX_criteria_hydro_plot_sh_wl$deltaQJXA_below_pct >= limit_conf_pct
+            dataEX_criteria_hydro_plot_sh_wl$shape[Ok_below] = 25 #v
+            dataEX_criteria_hydro_plot_sh_wl$size[Ok_below] = 2
+            
+            res = get_colors(dataEX_criteria_hydro_plot_sh_wl$deltaQJXA,
+                              upBin=Palette_bin$upBin,
+                              lowBin=Palette_bin$lowBin,
+                              Palette=Palette_hydro,
+                              Palette_layers=Palette_layers)
+            dataEX_criteria_hydro_plot_sh_wl$fill = res$colors
+            dataEX_criteria_hydro_plot_sh_wl$layer = res$layers
+
+            layers = as.numeric(levels(factor(dataEX_criteria_hydro_plot_sh_wl$layer)))
+            
             map_crue = map
+            for (l in layers) {
+                dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl, layer==l)
+                if (nrow(dataEX_plot_tmp) == 0) {
+                    next
+                }
+                map_crue = map_crue +
+                    annotate("point",
+                             x=dataEX_plot_tmp$XL93_m,
+                             y=dataEX_plot_tmp$YL93_m,
+                             fill=dataEX_plot_tmp$fill,
+                             color=IPCCgrey25, stroke=0.35,
+                             size=dataEX_plot_tmp$size,
+                             shape=dataEX_plot_tmp$shape)
+            }
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_crue,
@@ -1411,12 +1519,11 @@ sheet_projection_secteur = function (Stations,
                                       verbose=verbose)
 
 
-            res = dataSHEEP::compute_colorBin(-60, 60, 10, center=0)
-            label = get_labels_TeX(res$bin, unit="%",
+            label = get_labels_TeX(Palette_bin$bin, unit="%",
                                    is_unit_plurial=FALSE,
                                    add_unit_space=TRUE)
             
-            colorbar = panel_colorbar_circle(res$bin,
+            colorbar = panel_colorbar_circle(Palette_bin$bin,
                                              Palette_hydro,
                                              size_circle=2.5,
                                              d_line=0.5,
@@ -1452,14 +1559,19 @@ sheet_projection_secteur = function (Stations,
             hydroQM_plan = matrix(c(
                 "title",      "title",         "title",         "title",
                 "void",       "river_name_1",  "river_name_2",  "river_name_3", 
-                "ref_info",   "river_ref_1",   "river_ref_2",   "river_ref_3",   
-                "delta_info", "river_delta_1", "river_delta_2", "river_delta_3"
+                "ref_info",   "river_ref_1",   "river_ref_2",   "river_ref_3",
+                "river_void", "river_void",    "river_void",    "river_void",
+                "delta_info", "river_delta_1", "river_delta_2", "river_delta_3",
+                "void",       "axis_1",        "axis_2",         "axis_3"
             ), ncol=4, byrow=TRUE)
 
 
             hydroQM_title_height = 0.2
             hydroQM_river_name_height = 0.2
             hydroQM_river_graph_height = 1
+            hydroQM_river_void_height = 0.00
+            hydroQM_axis_height = 0.15
+            
             
             hydroQM_river_width = 1
             hydroQM_info_width = 0.2  
@@ -1469,8 +1581,14 @@ sheet_projection_secteur = function (Stations,
                                         verbose=verbose)
 
             hydroQM_herd = add_sheep(hydroQM_herd,
-                                     sheep=void(),
+                                     sheep=void(panel.background_fill=IPCCgrey97),
                                      id="void",
+                                     verbose=verbose)
+
+            hydroQM_herd = add_sheep(hydroQM_herd,
+                                     sheep=void(panel.background_fill=IPCCgrey97),
+                                     id="river_void",
+                                     height=hydroQM_river_void_height,
                                      verbose=verbose)
 
 #### title ___________________________________________________________
@@ -1499,28 +1617,30 @@ sheet_projection_secteur = function (Stations,
 
 #### informations référence ___________________________________________________________
             reference = ggplot() + theme_void() +
-                theme(plot.margin=margin(t=0, r=0,
+                theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                   color=NA),
+                      plot.margin=margin(t=0, r=0,
                                          b=0, l=0, "mm")) +
                 scale_x_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
                 annotate("text",
-                         x=0.2, y=0.5,
+                         x=0.2, y=0.52,
                          label=latex2exp::TeX("\\textbf{Période de RÉFÉRENCE}"),
                          size=2.3, hjust=0.5, vjust=0.5,
                          angle=90,
                          family="Lato",
                          color=IPCCgrey35) +
                 annotate("text",
-                         x=0.48, y=0.5,
+                         x=0.48, y=0.52,
                          label=latex2exp::TeX("\\textbf{1976-2005}"),
                          size=2.3, hjust=0.5, vjust=0.5,
                          angle=90,
                          family="Lato",
                          color=IPCCgrey35) +
                 annotate("text",
-                         x=0.8, y=0.5,
+                         x=0.8, y=0.52,
                          label=latex2exp::TeX("Débit mensuel (m$^3$/s)"),
                          size=2.3, hjust=0.5, vjust=0.5,
                          angle=90,
@@ -1535,7 +1655,9 @@ sheet_projection_secteur = function (Stations,
 
 #### informations changements ___________________________________________________________
             delta = ggplot() + theme_void() +
-                theme(plot.margin=margin(t=0, r=0,
+                theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                   color=NA),
+                      plot.margin=margin(t=0, r=0,
                                          b=0, l=0, "mm")) +
                 scale_x_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
@@ -1571,28 +1693,269 @@ sheet_projection_secteur = function (Stations,
 
             
 #### rivières ___________________________________________________________
-            Rivers = 1:3
-            nRiver = length(Rivers)
+            days_span_mean = 10
+            days_span_delta = 6
+            alpha_mean = 0.23
+            alpha_delta = 0.07
+            size_mean = 0.35
+            size_delta = 0.3
+            alpha_delta_rect = 0.2
+
+            loli_fact = 2
+            
+            get_labels_deltaQ = function(x) {
+                result = get_labels_HTML(x, unit="%",
+                                         is_unit_plurial=FALSE,
+                                         add_unit_space=TRUE,
+                                         Palette=Palette_hydro,
+                                         dColor=dColor)
+                return (result)
+            }
+
+            color_minus = Palette_hydro[1 + dColor]
+            color_plus = Palette_hydro[nColor - dColor]
+            
+            
+            Rivers_id = runif(3, 1, nrow(Stations))
+            Rivers_code = Stations$code[Rivers_id]
+            
+            nRiver = length(Rivers_code)
             for (k in 1:nRiver) {
+                river_code = Rivers_code[k]
+
+                dataEX_serie_hydro_sh_wl_code = dataEX_serie_hydro_sh_wl
+                for (cc in 1:length(dataEX_serie_hydro_sh_wl_code)) {
+                    dataEX_serie_hydro_sh_wl_code[[cc]] =
+                        dplyr::filter(dataEX_serie_hydro_sh_wl_code[[cc]],
+                                      code == river_code)
+                }
+                dataEX_serie_hydro_deltaQMA_prob_wl_code =
+                    dplyr::filter(dataEX_serie_hydro_deltaQMA_prob_wl,
+                                  code == river_code)
+                
+                river_surface = Stations$surface_km2[Stations$code == river_code]
+                text = paste0("\\textbf{", river_code, "} \\;",
+                              " (", signif(river_surface, 3), " km$^2$)")
+                river_name = ggplot() + theme_void() +
+                    theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                       color=NA),
+                          plot.margin=margin(t=0, r=0, b=0, l=0, "mm")) +
+                    scale_x_continuous(limits=c(0, 1),
+                                       expand=c(0, 0)) +
+                    scale_y_continuous(limits=c(0, 1),
+                                       expand=c(0, 0)) +
+                    annotate("text",
+                             x=0.5, y=0.5,
+                             label=latex2exp::TeX(text),
+                             size=2.4, hjust=0.5, vjust=0.5,
+                             family="Lato",
+                             color=IPCCgrey35)
+                
                 hydroQM_herd = add_sheep(hydroQM_herd,
-                                         sheep=contour(),
+                                         sheep=river_name,
                                          id=paste0("river_name_", k),
                                          height=hydroQM_river_name_height,
                                          width=hydroQM_river_width,
                                          verbose=verbose)
 
+                river_ref = ggplot() + coord_cartesian(clip="off") + 
+                    theme_IPCC(is_plot.background=TRUE,
+                               is_panel.grid.major.x=FALSE,
+                               is_panel.grid.major.y=TRUE,
+                               is_axis.line.x=FALSE,
+                               # axis.line.x_size=0.33,
+                               is_axis.ticks.x=FALSE,
+                               is_axis.ticks.y=FALSE,
+                               is_axis.text.x=FALSE,
+                               axis.ticks.length.x=0.8) +
+                    theme(plot.margin=margin(t=1, r=2, b=4, l=1, "mm")) +
+                    scale_x_date(expand=c(0, 0)) +
+                    scale_y_continuous(limits=c(0, NA),
+                                       expand=c(0, 0)) + 
+                    geom_segment(data=dataEX_serie_hydro_sh_wl_code$meanQMA,
+                                 aes(x=date-days_span_mean, xend=date+days_span_mean,
+                                     y=meanQMA, yend=meanQMA, group=Chain),
+                                 color=IPCCgrey67,
+                                 alpha=alpha_mean, size=size_mean)
+                
                 hydroQM_herd = add_sheep(hydroQM_herd,
-                                         sheep=contour(),
+                                         sheep=river_ref,
                                          id=paste0("river_ref_", k),
                                          height=hydroQM_river_graph_height,
                                          width=hydroQM_river_width,
+                                         label=paste0("align_", k),
                                          verbose=verbose)
+
+                date_axis = unique(dataEX_serie_hydro_sh_wl_code$deltaQMA$date)
+                date_axis_lim = c(min(date_axis)-days_span_mean, max(date_axis)+days_span_mean)
+
+                dataEX_serie_hydro_sh_wl_code_deltaQMAplus =
+                    dplyr::filter(dataEX_serie_hydro_sh_wl_code$deltaQMA,
+                                  deltaQMA > 0)
+                dataEX_serie_hydro_sh_wl_code_deltaQMAminus =
+                    dplyr::filter(dataEX_serie_hydro_sh_wl_code$deltaQMA,
+                                  deltaQMA <= 0)
+
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow =
+                    dplyr::filter(dataEX_serie_hydro_deltaQMA_prob_wl_code,
+                                  min_deltaQMA <= 0)
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow =
+                    dplyr::mutate(dplyr::group_by(dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow,
+                                                  date),
+                                  max_deltaQMA=min(c(0, max_deltaQMA)))
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove = 
+                    dplyr::filter(dataEX_serie_hydro_deltaQMA_prob_wl_code,
+                                  0 < max_deltaQMA)
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove =
+                    dplyr::mutate(dplyr::group_by(dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove,
+                                                  date),
+                                  min_deltaQMA=max(c(0, min_deltaQMA)))
+
+                dataEX_serie_hydro_sh_wl_code_narratracc =
+                    dplyr::filter(dataEX_serie_hydro_sh_wl_code$deltaQMA,
+                                  Chain %in% NarraTRACC_Chain)
+
+                dataEX_serie_hydro_sh_wl_code_narratracc$color = NA
+                for (nt in 1:length(NarraTRACC)) {
+                    Ok = dataEX_serie_hydro_sh_wl_code_narratracc$Chain == NarraTRACC[[nt]]["Chain"]
+                    dataEX_serie_hydro_sh_wl_code_narratracc$color[Ok] = NarraTRACC[[nt]]["color"]
+                }
+
+                
+                
+                
+                river_delta = ggplot() + coord_cartesian(clip="off") + 
+                    theme_IPCC(is_plot.background=TRUE,
+                               is_panel.grid.major.x=FALSE,
+                               is_panel.grid.major.y=TRUE,
+                               is_axis.line.x=FALSE,
+                               is_axis.ticks.x=FALSE,
+                               is_axis.ticks.y=FALSE,
+                               is_axis.text.x=FALSE,
+                               is_axis.text.y=k==1,
+                               axis.ticks.length.x=0.8) +
+                    theme(plot.margin=margin(t=4, r=2, b=1, l=1, "mm")) +
+                    scale_x_date(expand=c(0, 0)) +
+                    scale_y_continuous(limits=c(-100, 100),
+                                       labels=get_labels_deltaQ,
+                                       expand=c(0, 0)) +
+                    
+                    geom_rect(data=dataEX_serie_hydro_deltaQMA_prob_wl_code,
+                              aes(xmin=date-days_span_delta,
+                                  xmax=date+days_span_delta,
+                                  ymin=min_deltaQMA,
+                                  ymax=max_deltaQMA,
+                                  goups=date),
+                             fill=IPCCgrey97,
+                             color=NA) +
+                    geom_rect(data=dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow,
+                              aes(xmin=date-days_span_delta,
+                                  xmax=date+days_span_delta,
+                                  ymin=min_deltaQMA,
+                                  ymax=max_deltaQMA,
+                                  goups=date),
+                              alpha=alpha_delta_rect,
+                              fill=color_minus,
+                              color=NA) +
+                    geom_rect(data=dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove,
+                              aes(xmin=date-days_span_delta,
+                                  xmax=date+days_span_delta,
+                                  ymin=min_deltaQMA,
+                                  ymax=max_deltaQMA,
+                                  goups=date),
+                              alpha=alpha_delta_rect,
+                              fill=color_plus,
+                              color=NA) +
+                    
+                    geom_segment(data=dataEX_serie_hydro_sh_wl_code_deltaQMAplus,
+                                 aes(x=date-days_span_delta, xend=date+days_span_delta,
+                                     y=deltaQMA, yend=deltaQMA, group=Chain),
+                                 color=color_plus, lineend="round",
+                                 alpha=alpha_delta, size=size_delta) +
+                    geom_segment(data=dataEX_serie_hydro_sh_wl_code_deltaQMAminus,
+                                 aes(x=date-days_span_delta, xend=date+days_span_delta,
+                                     y=deltaQMA, yend=deltaQMA, group=Chain),
+                                 color=color_minus, lineend="round",
+                                 alpha=alpha_delta, size=size_delta) +
+                    annotate("line",
+                             x=date_axis_lim, 
+                             y=0,
+                             color=IPCCgrey60,
+                             linewidth=0.33) +
+                    
+                    
+                    geom_segment(data=dataEX_serie_hydro_sh_wl_code_narratracc,
+                                 aes(x=date-days_span_delta,
+                                     xend=date+days_span_delta*loli_fact,
+                                     y=deltaQMA, yend=deltaQMA, group=Chain),
+                             color=IPCCgrey97,
+                             linewidth=0.3, lineend="round") +
+                    annotate("point",
+                             x=dataEX_serie_hydro_sh_wl_code_narratracc$date+days_span_delta*loli_fact,
+                             y=dataEX_serie_hydro_sh_wl_code_narratracc$deltaQMA,
+                             color=IPCCgrey97,
+                             size=1,
+                             shape=20) +   
+                    
+                    geom_segment(data=dataEX_serie_hydro_sh_wl_code_narratracc,
+                                 aes(x=date-days_span_delta,
+                                     xend=date+days_span_delta*loli_fact,
+                                     y=deltaQMA, yend=deltaQMA, group=Chain),
+                                 color=dataEX_serie_hydro_sh_wl_code_narratracc$color,
+                                 linewidth=0.3,
+                                 alpha=0.5, lineend="round") +
+                    annotate("point",
+                             x=dataEX_serie_hydro_sh_wl_code_narratracc$date+days_span_delta*loli_fact,
+                             y=dataEX_serie_hydro_sh_wl_code_narratracc$deltaQMA,
+                             color=dataEX_serie_hydro_sh_wl_code_narratracc$color,
+                             size=0.4,
+                             shape=20)
+                
+                        # annotate("line",
+                                 # x=c(limits_bar[1],
+                                     # limits_bar[2]+dx_sL/2),
+                                 # y=plot_y[s],
+                                 # color=plot_color[s],
+                                 # linewidth=0.4,
+                                 # alpha=0.5,
+    # lineend="round")
+    
+                
+
+                
+                
                 
                 hydroQM_herd = add_sheep(hydroQM_herd,
-                                         sheep=contour(),
+                                         sheep=river_delta,
                                          id=paste0("river_delta_", k),
                                          height=hydroQM_river_graph_height,
                                          width=hydroQM_river_width,
+                                         label=paste0("align_", k),
+                                         verbose=verbose)
+
+                
+                axis = ggplot() + theme_void() +
+                    theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                       color=NA),
+                          text=element_text(family="Lato"),
+                          plot.margin=margin(t=0, r=0,
+                                             b=1, l=0, "mm"),
+                          axis.text.x=element_text(color=IPCCgrey40,
+                                                   # face="bold",
+                                                   size=7)) +
+                    annotate("point",
+                             x=date_axis, y=0.5,
+                             color=NA) +
+                    scale_x_date(date_breaks="1 month",
+                                 limits=date_axis_lim,
+                                 labels = function(x) substr(month.name[as.numeric(format(x, "%m"))], 1, 1),
+                                 expand=c(0, 0))
+                
+                hydroQM_herd = add_sheep(hydroQM_herd,
+                                         sheep=axis,
+                                         id=paste0("axis_", k),
+                                         height=hydroQM_axis_height,
+                                         label=paste0("align_", k),
                                          verbose=verbose)
             }
             
