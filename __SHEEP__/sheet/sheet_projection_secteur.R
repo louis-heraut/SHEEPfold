@@ -22,7 +22,7 @@
 
 
 sheet_projection_secteur = function (Stations,
-                                     Secteur,
+                                     Secteurs,
                                      dataEX_criteria_climate,
                                      dataEX_criteria_hydro,
                                      dataEX_serie_hydro,
@@ -31,7 +31,8 @@ sheet_projection_secteur = function (Stations,
                                      # metaEX_serie_hydro,
                                      WL,
                                      NarraTRACC,
-                                     delta_prob=0, 
+                                     delta_prob=0,
+                                     limit_conf_pct=80,
                                      icons=NULL,
                                      logo_info="",
                                      Pages=NULL,
@@ -84,6 +85,50 @@ sheet_projection_secteur = function (Stations,
                                                  na.rm=TRUE),
                                        .names="max_{.col}"))
 
+    dataEX_criteria_hydro = tidyr::unite(dataEX_criteria_hydro,
+                                         "Chain",
+                                         "EXP", "GCM", "RCM",
+                                         "BC", "HM",
+                                         sep="_", remove=FALSE)
+
+
+
+    dataEX_criteria_hydro_conf =
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro,
+                                         code, GWL, EXP),
+                         dplyr::across(.cols=where(is.numeric),
+                                       .fns=~sum(.x>0)/dplyr::n()*100,
+                                       .names="{.col}_above_pct"),
+                         dplyr::across(.cols=where(is.numeric),
+                                       .fns=~sum(.x<0)/dplyr::n()*100,
+                                       .names="{.col}_below_pct"),
+                         .groups="drop")
+
+    dataEX_criteria_hydro_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro,
+                                         code, SH, GWL, EXP, GCM, RCM, BC),
+                         dplyr::across(.cols=where(is.numeric),
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
+    dataEX_criteria_hydro_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_mean,
+                                         code, SH, GWL, EXP, GCM, RCM),
+                         dplyr::across(.cols=where(is.numeric),
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
+    dataEX_criteria_hydro_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_mean,
+                                         code, SH, GWL, EXP, GCM),
+                         dplyr::across(.cols=where(is.numeric),
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
+    dataEX_criteria_hydro_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_mean,
+                                         code, SH, GWL, EXP),
+                         dplyr::across(.cols=where(is.numeric),
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")  
+    
     SH = unique(substr(Stations$code, 1, 2))
     nSH = length(SH) 
     
@@ -95,40 +140,40 @@ sheet_projection_secteur = function (Stations,
             print(paste0(i, "/", nSH, " so ", round(i/nSH*100, 1), "% done -> ", sh))
         }
         
-        Secteur = Secteurs[Secteurs$id_secteur == sh,]
+        secteur = Secteurs[Secteurs$id_secteur == sh,]
         
         Stations_sh = dplyr::filter(Stations, substr(code, 1, 2) == sh)
-        
-        dataEX_criteria_climate_sh = dplyr::filter(dataEX_criteria_climate, SH == sh)
-        dataEX_criteria_hydro_sh = dplyr::filter(dataEX_criteria_hydro, SH == sh)
-        dataEX_serie_hydro_sh = dataEX_serie_hydro
-        for (j in 1:length(dataEX_serie_hydro_sh)) {
-            dataEX_serie_hydro_sh[[j]] = dplyr::filter(dataEX_serie_hydro_sh[[j]], SH == sh)
-        }
         
         secteurHydro_shp_mini = Shapefiles_mini$secteurHydro[Shapefiles_mini$secteurHydro$CdSecteurH == sh,]
         secteurHydro_shp = Shapefiles$secteurHydro[Shapefiles$secteurHydro$CdSecteurH == sh,]
         
-        Chain = unique(Projections$Chain)
-        nChain = length(Chain)
-
+        # Chain = unique(Projections$Chain)
+        # nChain = length(Chain)
 
         for (j in 1:nWL) {
             id_letter = 1
             
             wl = WL[[j]]
             print(paste0(j, "/", nWL, " so ", round(j/nWL*100, 1), "% done -> ", wl["RWL"]))
-
             
-            dataEX_criteria_climate_sh_wl = dplyr::filter(dataEX_criteria_climate_sh, GWL == wl["GWLclean"])
-            dataEX_criteria_hydro_sh_wl = dplyr::filter(dataEX_criteria_hydro_sh, GWL == wl["GWLclean"])
-            dataEX_serie_hydro_sh_wl = dataEX_serie_hydro_sh
+            dataEX_criteria_climate_sh_wl = dplyr::filter(dataEX_criteria_climate,
+                                                          SH==sh, GWL == wl["GWLclean"])
+            dataEX_criteria_hydro_sh_wl = dplyr::filter(dataEX_criteria_hydro,
+                                                        SH==sh, GWL == wl["GWLclean"])
+
+            dataEX_serie_hydro_sh_wl = dataEX_serie_hydro
             for (j in 1:length(dataEX_serie_hydro_sh_wl)) {
-                dataEX_serie_hydro_sh_wl[[j]] = dplyr::filter(dataEX_serie_hydro_sh_wl[[j]], GWL == wl["GWLclean"])
+                dataEX_serie_hydro_sh_wl[[j]] = dplyr::filter(dataEX_serie_hydro_sh_wl[[j]],
+                                                              SH==sh, GWL == wl["GWLclean"])
             }
 
-            dataEX_criteria_climate_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_stat, SH==sh, GWL==wl["GWLclean"])
-    
+            dataEX_criteria_climate_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_stat,
+                                                               SH==sh, GWL==wl["GWLclean"])
+            dataEX_criteria_hydro_conf_sh_wl = dplyr::filter(dataEX_criteria_hydro_conf,
+                                                             SH == sh, GWL==wl["GWLclean"])
+            dataEX_criteria_hydro_mean_sh_wl = dplyr::filter(dataEX_criteria_hydro_mean,
+                                                             SH == sh, GWL==wl["GWLclean"])
+            
             
             ## PAGE _________________________________________________________
             herd = bring_grass(verbose=verbose)
@@ -251,7 +296,7 @@ sheet_projection_secteur = function (Stations,
             dy_region = 0.29
             dy_basin = 0.15
             
-            title_text = strwrap(paste0(sh, " - ", Secteur$secteur), width=42)
+            title_text = strwrap(paste0(sh, " - ", secteur$secteur), width=42)
             nLine = length(title_text)
             title_text[1] = sub("[-] ", "- \\\\textbf{", title_text[1])
             title_text[1] = paste0(title_text[1], "}")
@@ -274,8 +319,8 @@ sheet_projection_secteur = function (Stations,
                              color=TRACCblue)
             }
 
-            region = paste0("\\textbf{Region hydro.} \\; ", Secteur$region)
-            basin = paste0("\\textbf{Bassin de gestion} \\; ", Secteur$bassin)
+            region = paste0("\\textbf{Region hydro.} \\; ", secteur$region)
+            basin = paste0("\\textbf{Bassin de gestion} \\; ", secteur$bassin)
             
             title = title +
                 annotate("text",
@@ -954,6 +999,7 @@ sheet_projection_secteur = function (Stations,
                                 return (value)
                             }
                         }
+                        
                         value = format_value(value)
                         value = get_labels_TeX(value, unit=column_unit[cc],
                                                is_unit_plurial=FALSE,
@@ -1058,27 +1104,38 @@ sheet_projection_secteur = function (Stations,
             lim_nchar_newline = 50
             dy_title_newline = 0.4
             
+            alpha = 0.6
+            
             hydroMap_herd = bring_grass(verbose=verbose)
             hydroMap_herd = plan_of_herd(hydroMap_herd, hydroMap_plan,
                                          verbose=verbose)
 
-            margin_map = margin(t=0, r=1, b=0, l=1, unit="mm")
+            margin_map = margin(t=0, r=0, b=0, l=0, unit="mm")
+
+            secteur_union = secteurHydro_shp |> sf::st_union()
+            rivers_in_secteur = sf::st_intersection(Shapefiles$river, secteur_union)
             
             cf = coord_fixed()
             cf$default = TRUE
             map = ggplot() + theme_void() + cf +
                 theme(plot.margin=margin_map) +
                 
-                geom_sf(data=Shapefiles$europe,
+                geom_sf(data=Shapefiles$france,
                         color=NA, alpha=0.35,
                         fill=IPCCgrey97) +
                 
-                geom_sf(data=Shapefiles$france,
+                geom_sf(data=secteurHydro_shp,
                         color=NA,
                         fill=IPCCgrey97) +
+                
                 geom_sf(data=Shapefiles$river,
                         color=INRAElightcyan,
-                        alpha=1,
+                        alpha=0.5,
+                        fill=NA,
+                        linewidth=0.28,
+                        na.rm=TRUE) +
+                geom_sf(data=rivers_in_secteur,
+                        color=INRAElightcyan,
                         fill=NA,
                         linewidth=0.28,
                         na.rm=TRUE) +
@@ -1086,11 +1143,6 @@ sheet_projection_secteur = function (Stations,
                         color=IPCCgrey85,
                         fill=NA, lineend="round",
                         size=0.25) +
-                
-                geom_sf(data=Shapefiles$europe,
-                        color=IPCCgrey50, alpha=0.6,
-                        fill=NA, lineend="round",
-                        linewidth=0.27) +
                 
                 geom_sf(data=Shapefiles$france,
                         color=IPCCgrey50,
@@ -1101,17 +1153,40 @@ sheet_projection_secteur = function (Stations,
                         color=IPCCgrey40,
                         fill=NA, lineend="round",
                         linewidth=0.48)
-
+            
             bbox = sf::st_bbox(secteurHydro_shp)
+            aspect_plot = 6.5/8.5
             margin_factor = 0.05
+            
             x_range = bbox["xmax"] - bbox["xmin"]
             y_range = bbox["ymax"] - bbox["ymin"]
-            xlim = c(bbox["xmin"] - x_range*margin_factor,
-                      bbox["xmax"] + x_range*margin_factor)
-            ylim = c(bbox["ymin"] - y_range*margin_factor,
-                      bbox["ymax"] + y_range*margin_factor)
+            aspect_bbox = as.numeric(y_range/x_range)
+
+            if (aspect_bbox > aspect_plot) {
+                target_x_range = as.numeric(y_range/aspect_plot)
+                x_center = (bbox["xmin"] + bbox["xmax"])/2
+                xlim = c(x_center - target_x_range/2, x_center + target_x_range/2)
+                ylim = c(bbox["ymin"], bbox["ymax"])
+            } else {
+                target_y_range = as.numeric(x_range * aspect_plot)
+                y_center = (bbox["ymin"] + bbox["ymax"])/2
+                ylim = c(y_center - target_y_range/2, y_center + target_y_range/2)
+                xlim = c(bbox["xmin"], bbox["xmax"])
+            }
+
+            xlim_center = mean(xlim)
+            ylim_center = mean(ylim)
+
+            xlim_range = diff(xlim)
+            ylim_range = diff(ylim)
+
+            xlim = c(xlim_center - xlim_range/2 * (1 + margin_factor),
+                      xlim_center + xlim_range/2 * (1 + margin_factor))
+            ylim = c(ylim_center - ylim_range/2 * (1 + margin_factor),
+                      ylim_center + ylim_range/2 * (1 + margin_factor))
 
             map = map + coord_sf(xlim=xlim, ylim=ylim, expand=FALSE)
+
             
 
 #### etiage __________________________________________________________
@@ -1147,12 +1222,30 @@ sheet_projection_secteur = function (Stations,
                                       verbose=verbose)
 
 
+            dataEX_criteria_hydro_plot_sh_wl =
+                dplyr::left_join(dplyr::select(dataEX_criteria_hydro_mean_sh_wl,
+                                               code, deltaVCN10),
+                                 dplyr::select(dataEX_criteria_hydro_conf_sh_wl,
+                                               code, above_pct_deltaVCN10,
+                                               below_pct_deltaVCN10),
+                                 by="code")
+            dataEX_criteria_hydro_plot_sh_wl =
+                dplyr::left_join(dataEX_criteria_hydro_plot_sh_wl,
+                                 dplyr::select(Stations, code, XL93_m, YL93_m),
+                                 by="code")
 
-            dataEX_criteria_hydro_VCN10 = dplyr::select(dataEX_criteria_hydro, where(is.character), deltaVCN10)
+            
+            dataEX_criteria_hydro_plot_sh_wl$shape = 21 #o
 
+            Ok_above = dataEX_criteria_hydro_plot_sh_wl$above_pct_deltaVCN10 >= limit_conf_pct
+            dataEX_criteria_hydro_plot_sh_wl[Ok_above]$shape = 24 #^
+            
+            Ok_below = dataEX_criteria_hydro_plot_sh_wl$below_pct_deltaVCN10 >= limit_conf_pct
+            dataEX_criteria_hydro_plot_sh_wl[Ok_below]$shape = 25 #v
+            
             map_etiage = map
-
-
+            # + 
+                # geom_point()
             
             
             hydroMap_herd = add_sheep(hydroMap_herd,
@@ -1587,7 +1680,7 @@ sheet_projection_secteur = function (Stations,
                              color=TRACCblue)
             }
 
-            foot_info = paste0("\\small{", format(Sys.Date(), "%B %Y"), "\\; - \\;}\\textbf{\\small{n°}", Secteur$id, "}")
+            foot_info = paste0("\\small{", format(Sys.Date(), "%B %Y"), "\\; - \\;}\\textbf{\\small{n°}", secteur$id, "}")
             
             foot = foot +
                 annotate("text",
