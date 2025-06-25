@@ -1074,7 +1074,7 @@ sheet_projection_secteur = function (Stations,
 
 ##### info ___________________________________________________________
             dy_newline = 0.21
-            info_text = c("Changements projetés en température et précipitations (référence : 1976-2005)",
+            info_text = c("Changements projetés en température et précipitations (référence : 1991-2020)",
                           "Les points correspondent aux 17 projections à partir desquelles sont calculées",
                           "les statistiques (minimum, médiane, maximum)")
             
@@ -1634,7 +1634,7 @@ sheet_projection_secteur = function (Stations,
                          color=IPCCgrey35) +
                 annotate("text",
                          x=0.48, y=0.52,
-                         label=latex2exp::TeX("\\textbf{1976-2005}"),
+                         label=latex2exp::TeX("\\textbf{1991-2020}"),
                          size=2.3, hjust=0.5, vjust=0.5,
                          angle=90,
                          family="Lato",
@@ -1981,7 +1981,7 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 #### title ___________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") Changements relatifs projetés en débits et recharge (référence : 1976-2005, statistiques spatiales sur les écarts relatifs médians)")
+            title_text = paste0("(", letters[id_letter], ") Changements relatifs projetés en débits et recharge (référence : 1991-2020, statistiques spatiales sur les écarts relatifs médians)")
             id_letter = id_letter + 1
             
             title = ggplot() + theme_void() +
@@ -2005,8 +2005,206 @@ sheet_projection_secteur = function (Stations,
                                         verbose=verbose)
 
 #### table ___________________________________________________________            
+
+
+
+
+            column_id = c("", "deltaVCN10-5", "deltaQA", "deltaRecharge", "deltaQSA_DJF",
+                          "deltaQSA_MAM", "deltaQSA_JJA", "deltaQSA_SON", "deltaQJXA-10")
+            column_name = c("", "VCN10-5", "QA", "Recharge", "QS_Hiver",
+                            "QS_Printemps", "QS_Été", "QS_Automne", "QJXA-10")
+            # column_name = c("", "Débit d'étiage", "Débit annuel", "Recharge annuelle", "Débit hiver",
+                            # "Débit printemps", "Débit été", "Débit automne", "Débit de crue")
+            # column_icon = c("", "mode_cool", "mode_cool", "sunny", "sunny")
+            # column_icon_font = c("", "Material Symbols Outlined", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Rounded")
+            column_unit = c("", "%", "%", "%", "%", "%", "%", "%", "%")
+            
+            row_id = c("",
+                       "max",
+                       "median",
+                       "min",
+                       sapply(NarraTRACC, "[", "climateChain"))
+            row_name = c("",
+                         "maximum",
+                         "médiane",
+                         "minimum",
+                         sapply(NarraTRACC, "[", "name"))
+            row_icon = c("", "expand_circle_up", "do_not_disturb_on", "expand_circle_down", rep("", nNarraTRACC))
+            row_color = c("",
+                          rep(IPCCgrey35, 3),
+                          sapply(NarraTRACC, "[", "color"))
+
+            get_labels_TeX = function(x, unit, is_unit_plurial, add_unit_space) {
+                unit_suffixed = ifelse(!is_unit_plurial, unit,
+                                ifelse(x != 0, paste0(unit, "s"), unit))
+                result = ifelse(add_unit_space,
+                                paste0("\\small{ ", unit_suffixed, "}"),
+                                paste0(unit_suffixed))
+                x_text = ifelse(x > 0, paste0("+", x), as.character(x))
+                result = ifelse(x < 0 | x > 0,
+                                paste0("\\textbf{", x_text, "}", result, ""),
+                                paste0("\\textbf{", x_text, "}"))
+
+                return (result)
+            }
+            
+            xmax = 10
+            ymax = 10
+    
+            dx_left_line = 0
+            dx_left_text = 0.1
+            dx_icon = 0.12
+            dx_right_text = 0.4
+            dx_left_narratrac_text = 0.35
+            dx_left_narratrac_circle = 0.15
+            
+            dy_column_title = 1.5
+            dx_row_title = 1.5
+
+            # dx_delta = 0.22
+            # dx_seas = 0.3
+            
+            nCol = length(column_id) 
+            nRow = length(row_id)
+            dx_column = (xmax-dx_row_title-dx_right_text)/(nCol-1)
+            dy_row = (ymax-dy_column_title)/(nRow-1)
+           
+            
+            table = ggplot() + theme_void() +
+                theme(plot.margin=margin(t=0, r=0,
+                                         b=1, l=0, "mm")) +
+                scale_x_continuous(limits=c(0, xmax),
+                                   expand=c(0, 0)) +
+                scale_y_continuous(limits=c(0, ymax),
+                                   expand=c(0, 0)) +
+                annotate("rect",
+                         xmin=dx_left_line, xmax=xmax,
+                         ymin=ymax-dy_column_title, ymax=ymax,
+                         color=NA, fill=IPCCgrey97)
+
+            for (rr in 1:nRow) {
+                ytmp = ymax - dy_column_title - dy_row*(rr-1)
+
+                if (rr > 1) {
+                    table = table +
+                        annotate("line",
+                                 x=c(dx_left_line, xmax),
+                                 y=rep(ytmp, 2),
+                                 color=IPCCgrey80,
+                                 linewidth=0.25, lineend="round")
+                }
+                if (rr > 1) {
+                    if (rr <= 4) {
+                        xtmp = dx_left_line + dx_left_text
+                    } else {
+                        table = table +
+                            annotate("point",
+                                     x=dx_left_line + dx_left_narratrac_circle,
+                                     y=ytmp + dy_row/2,
+                                     color=row_color[rr], shape=16)
+                        xtmp = dx_left_line + dx_left_narratrac_text
+                    }
+                    table = table +
+                        annotate("text",
+                                 x=xtmp,
+                                 y=ytmp + dy_row/2,
+                                 label=row_icon[rr],
+                                 size=3, hjust=0.5, vjust=0.6,
+                                 family="Material Symbols Outlined",
+                                 color=IPCCgrey40) +
+                        annotate("text",
+                                 x=xtmp + dx_icon,
+                                 y=ytmp + dy_row/2,
+                                 label=row_name[rr],
+                                 vjust=0.5, hjust=0,
+                                 size=3, family="Lato",
+                                 color=IPCCgrey23)
+                }
+                for (cc in 2:nCol) {
+                    # if (cc == 3) {
+                    #     dx_shift = -dx_column*0.1
+                    # } else if (cc == 4) {
+                    #     dx_shift = dx_column*0.1
+                    # } else {
+                    #     dx_shift = 0
+                    # }
+                    
+                    xtmp = dx_row_title + (cc-1)*dx_column #+ dx_shift
+                    if (rr == 1) {
+                        label = TeX(convert2TeX(column_name[cc], bold=FALSE))
+                        
+                        table = table +
+                            # annotate("text",
+                                     # x=xtmp - dx_column/2 - dx_delta,
+                                     # y=ytmp + dy_column_title*0.5,
+                                     # label="Δ",
+                                     # size=3, hjust=0.5, vjust=0.5,
+                                     # family="Noto Sans",
+                                     # color=IPCCgrey23) +
+                            annotate("text",
+                                     x=xtmp - dx_column/2,
+                                     y=ytmp + dy_column_title*0.5,
+                                     label=label,
+                                     vjust=0.5, hjust=0.5,
+                                     size=3, family="Lato",
+                                     color=IPCCgrey23) #+
+                            # annotate("text",
+                                     # x=xtmp - dx_column/2 + dx_seas,
+                                     # y=ytmp + dy_column_title*0.5,
+                                     # label=column_icon[cc],
+                                     # size=3, hjust=0.5, vjust=0.7,
+                                     # family=column_icon_font[cc],
+                                     # color=IPCCgrey40)
+                    } else {
+                        if (rr <= 4) {
+                            id = paste0(row_id[rr], "_", column_id[cc])
+                            # value = dataEX_criteria_climate_stat_sh_wl[[id]]
+                            value = 1
+                        } else {
+                            # value = dplyr::filter(dataEX_criteria_climate_sh_wl,
+                                                  # climateChain == row_id[rr])[[column_id[cc]]]
+                            value = 1
+                        }
+
+                        format_value = function(x) {
+                            value = signif(x, 2)
+                            if (abs(value) < 0.001) {
+                                return (round(x, 3))
+                            } else {
+                                return (value)
+                            }
+                        }
+                        
+                        value = format_value(value)
+                        value = get_labels_TeX(value, unit=column_unit[cc],
+                                               is_unit_plurial=FALSE,
+                                               add_unit_space=TRUE)
+
+                        if (column_name[cc] == "T") {
+                            Palette_tmp = Palette_temperature
+                        } else if (column_name[cc] == "R") {
+                            Palette_tmp = Palette_hydro
+                        }
+                        color = ifelse(grepl("-", value), Palette_tmp[1 + dColor],
+                                ifelse(grepl("+", value), Palette_tmp[nColor - dColor], ""))
+
+                        table = table +
+                            annotate("text",
+                                     x=xtmp - dx_column*0.75,
+                                     y=ytmp + dy_row/2,
+                                     label=latex2exp::TeX(value),
+                                     vjust=0.5, hjust=0,
+                                     size=3, family="Lato",
+                                     color=color)
+                    }                
+                }
+            }
+            
+
+
+
             hydroTable_herd = add_sheep(hydroTable_herd,
-                                        sheep=contour(),
+                                        sheep=table,
                                         id="content",
                                         height=hydroTable_content_height,
                                         verbose=verbose)
