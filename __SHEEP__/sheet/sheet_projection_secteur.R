@@ -222,7 +222,7 @@ sheet_projection_secteur = function (Stations,
             
             dataEX_criteria_climate_bySH_sh_wl = dplyr::filter(dataEX_criteria_climate_bySH,
                                                                SH==sh, GWL == wl["GWLclean"])
-            
+
             dataEX_criteria_climate_bySH_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_bySH_stat,
                                                                     SH==sh, GWL==wl["GWLclean"])
             
@@ -618,7 +618,7 @@ sheet_projection_secteur = function (Stations,
             climate_delta_plan = matrix(c(
                 "dR", "hiver_title", "space", "ete_title",
                 "dR",   "hiver",       "space", "ete",
-                "void", "dT",          "space", "dT" 
+                "void", "dT",          "dT", "dT" 
             ), ncol=4, byrow=TRUE)
 
             climate_delta_variable_title_height = 0.1
@@ -646,7 +646,7 @@ sheet_projection_secteur = function (Stations,
 
 ##### axis __________________________________________________________
             dx_dR = 0.06
-            dx_dT = 0.2
+            dx_dT = 0.25
             
             axis_dR = ggplot() + theme_void() +
                 theme(plot.margin=margin(t=0, r=0,
@@ -781,13 +781,13 @@ sheet_projection_secteur = function (Stations,
                 }
 
                 Ttick = 0.5
-                TMm_range = c(min(dataEX_criteria_climate_bySH_sh_wl[[paste0("delta_TMm_", season)]]),
-                              max(dataEX_criteria_climate_bySH_sh_wl[[paste0("delta_TMm_", season)]]))
+                TMm_range = c(min(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaTMm_", season)]]),
+                              max(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaTMm_", season)]]))
                 TMm_range =  c(floor(TMm_range[1] / Ttick) * Ttick, ceiling(TMm_range[2] / Ttick) * Ttick)
                 TMm_range = expand(TMm_range)
 
-                RR_range = c(min(dataEX_criteria_climate_bySH_sh_wl[[paste0("delta_RR_", season)]]),
-                             max(dataEX_criteria_climate_bySH_sh_wl[[paste0("delta_RR_", season)]]))
+                RR_range = c(min(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaRR_", season)]]),
+                             max(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaRR_", season)]]))
                 RR_range =  c(floor(RR_range[1] / 5) * 5, ceiling(RR_range[2] / 5) * 5)
                 RR_range = expand(RR_range)
 
@@ -832,8 +832,8 @@ sheet_projection_secteur = function (Stations,
 
                 delta_variable = delta_variable +
                     geom_point(data=dataEX_criteria_climate_bySH_sh_wl_NO_narratrac,
-                               aes(x=get(paste0("delta_TMm_", season)),
-                                   y=get(paste0("delta_RR_", season))),
+                               aes(x=get(paste0("deltaTMm_", season)),
+                                   y=get(paste0("deltaRR_", season))),
                                size=1, color=IPCCgrey67)
 
                 for (k in 1:nNarraTRACC) {
@@ -842,12 +842,12 @@ sheet_projection_secteur = function (Stations,
                                       climateChain == NarraTRACC_sh_climateChain[k])
                     delta_variable = delta_variable +
                         geom_point(data=dataEX_criteria_climate_bySH_sh_wl_narratrac,
-                                   aes(x=get(paste0("delta_TMm_", season)),
-                                       y=get(paste0("delta_RR_", season))),
+                                   aes(x=get(paste0("deltaTMm_", season)),
+                                       y=get(paste0("deltaRR_", season))),
                                    size=1.4, color=IPCCgrey97) + 
                         geom_point(data=dataEX_criteria_climate_bySH_sh_wl_narratrac,
-                                   aes(x=get(paste0("delta_TMm_", season)),
-                                       y=get(paste0("delta_RR_", season))),
+                                   aes(x=get(paste0("deltaTMm_", season)),
+                                       y=get(paste0("deltaRR_", season))),
                                    size=1, color=NarraTRACC_sh_color[k])
                 }
     
@@ -922,9 +922,7 @@ sheet_projection_secteur = function (Stations,
                                               verbose=verbose)
 
 ##### table ___________________________________________________________
-            RR_thresold = 1
-            
-            column_id = c("", "delta_TMm_DJF", "delta_RR_DJF", "delta_TMm_JJA", "delta_RR_JJA")
+            column_id = c("", "deltaTMm_DJF", "deltaRR_DJF", "deltaTMm_JJA", "deltaRR_JJA")
             column_name = c("", "T_Hiver", "R_Hiver", "T_Été", "R_Été")
             # column_icon = c("", "mode_cool", "mode_cool", "sunny", "sunny")
             # column_icon_font = c("", "Material Symbols Outlined", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Rounded")
@@ -1089,9 +1087,9 @@ sheet_projection_secteur = function (Stations,
                             value = dplyr::filter(dataEX_criteria_climate_bySH_sh_wl,
                                                   climateChain == row_id[rr])[[column_id[cc]]]
                         }
-                        
-                        format_value = function(x) {
-                            if (abs(x) < RR_thresold) {
+
+                        format_value = function(x, thresold=0.1) {
+                            if (abs(x) < thresold) {
                                 return (0)
                             } else {
                                 value = signif(x, 2)
@@ -1100,7 +1098,7 @@ sheet_projection_secteur = function (Stations,
                         }
                         
                         value = format_value(value)
-                        value = get_labels_TeX(value, unit=column_unit[cc],
+                        valueC = get_labels_TeX(value, unit=column_unit[cc],
                                                is_unit_plurial=FALSE,
                                                add_unit_space=TRUE,
                                                is_unit_zero=TRUE)
@@ -1111,9 +1109,9 @@ sheet_projection_secteur = function (Stations,
                             Palette_tmp = Palette_hydro
                         }
 
-                        if (grepl("^-", value)) {
+                        if (value < 0) {
                             color = Palette_tmp[1 + dColor]
-                        } else if (grepl("^+", value)) {
+                        } else if (value > 0) {
                             color = Palette_tmp[nColor - dColor]
                         } else {
                             color = IPCCgrey50
@@ -1123,7 +1121,7 @@ sheet_projection_secteur = function (Stations,
                             annotate("text",
                                      x=xtmp - dx_column*0.7,
                                      y=ytmp + dy_row/2,
-                                     label=latex2exp::TeX(value),
+                                     label=latex2exp::TeX(valueC),
                                      vjust=0.5, hjust=0,
                                      size=3, family="Lato",
                                      color=color)
@@ -1300,6 +1298,21 @@ sheet_projection_secteur = function (Stations,
 
             map = map + coord_sf(xlim=xlim, ylim=ylim, expand=FALSE)
 
+
+            nlim = 9
+            Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 == nlim)
+            while (nrow(Stations_sh_selection) < 3 & nrow(Stations_sh_selection) < nrow(Stations_sh)) {
+                nlim = nlim - 1
+                Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 == nlim)
+            }
+
+            Stations_sh_selection = dplyr::filter(Stations_sh_selection,
+                                                  surface_km2 == max(surface_km2, na.rm=TRUE) |
+                                                  row_number() == which.min(abs(surface_km2-median(surface_km2,
+                                                                                                   na.rm=TRUE))) |
+                                                  surface_km2 == min(surface_km2, na.rm=TRUE))
+            Stations_sh_selection = dplyr::arrange(Stations_sh_selection, surface_km2)
+
             
 
 #### etiage __________________________________________________________
@@ -1367,10 +1380,16 @@ sheet_projection_secteur = function (Stations,
             dataEX_criteria_hydro_plot_sh_wl$layer = res$layers
 
             layers = as.numeric(levels(factor(dataEX_criteria_hydro_plot_sh_wl$layer)))
-            
+
+
+            dataEX_criteria_hydro_plot_sh_wl_light = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl,
+                                                                   code %in% Stations_sh_selection$code)
+            dataEX_criteria_hydro_plot_sh_wl_NOlight = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl,
+                                                                   !(code %in% Stations_sh_selection$code))
+
             map_etiage = map
             for (l in layers) {
-                dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl, layer==l)
+                dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl_NOlight, layer==l)
                 if (nrow(dataEX_plot_tmp) == 0) {
                     next
                 }
@@ -1379,10 +1398,20 @@ sheet_projection_secteur = function (Stations,
                              x=dataEX_plot_tmp$XL93_m,
                              y=dataEX_plot_tmp$YL93_m,
                              fill=dataEX_plot_tmp$fill,
-                             color=IPCCgrey25, stroke=0.35,
+                             color=IPCCgrey23,
+                             stroke=0.35,
                              size=dataEX_plot_tmp$size,
                              shape=dataEX_plot_tmp$shape)
             }
+            map_etiage = map_etiage +
+                annotate("point",
+                         x=dataEX_criteria_hydro_plot_sh_wl_light$XL93_m,
+                         y=dataEX_criteria_hydro_plot_sh_wl_light$YL93_m,
+                         fill=dataEX_criteria_hydro_plot_sh_wl_light$fill,
+                         color=IPCCgold,
+                         stroke=0.35,
+                         size=dataEX_criteria_hydro_plot_sh_wl_light$size,
+                         shape=dataEX_criteria_hydro_plot_sh_wl_light$shape)
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_etiage,
@@ -1498,9 +1527,14 @@ sheet_projection_secteur = function (Stations,
 
             layers = as.numeric(levels(factor(dataEX_criteria_hydro_plot_sh_wl$layer)))
             
+            dataEX_criteria_hydro_plot_sh_wl_light = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl,
+                                                                   code %in% Stations_sh_selection$code)
+            dataEX_criteria_hydro_plot_sh_wl_NOlight = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl,
+                                                                     !(code %in% Stations_sh_selection$code))
+
             map_crue = map
             for (l in layers) {
-                dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl, layer==l)
+                dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl_NOlight, layer==l)
                 if (nrow(dataEX_plot_tmp) == 0) {
                     next
                 }
@@ -1509,10 +1543,20 @@ sheet_projection_secteur = function (Stations,
                              x=dataEX_plot_tmp$XL93_m,
                              y=dataEX_plot_tmp$YL93_m,
                              fill=dataEX_plot_tmp$fill,
-                             color=IPCCgrey25, stroke=0.35,
+                             color=IPCCgrey23,
+                             stroke=0.35,
                              size=dataEX_plot_tmp$size,
                              shape=dataEX_plot_tmp$shape)
             }
+            map_crue = map_crue +
+                annotate("point",
+                         x=dataEX_criteria_hydro_plot_sh_wl_light$XL93_m,
+                         y=dataEX_criteria_hydro_plot_sh_wl_light$YL93_m,
+                         fill=dataEX_criteria_hydro_plot_sh_wl_light$fill,
+                         color=IPCCgold,
+                         stroke=0.35,
+                         size=dataEX_criteria_hydro_plot_sh_wl_light$size,
+                         shape=dataEX_criteria_hydro_plot_sh_wl_light$shape)
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_crue,
@@ -1612,10 +1656,10 @@ sheet_projection_secteur = function (Stations,
                                              stroke=NULL,
                                              color=NULL,
                                              shape=21,
-                                             colorText=IPCCgrey50,
-                                             colorLine=IPCCgrey50,
+                                             colorText=IPCCgrey40,
+                                             colorLine=IPCCgrey40,
                                              on_circle=FALSE,
-                                             margin=margin(t=0, r=2, b=0, l=3, "mm"))
+                                             margin=margin(t=0, r=2, b=1, l=3, "mm"))
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=colorbar,
@@ -1790,15 +1834,13 @@ sheet_projection_secteur = function (Stations,
 
             color_minus = Palette_hydro[1 + dColor]
             color_plus = Palette_hydro[nColor - dColor]
-            
-            
-            Rivers_id = runif(3, 1, nrow(Stations))
-            Rivers_code = Stations$code[Rivers_id]
-            
-            nRiver = length(Rivers_code)
-            for (k in 1:nRiver) {
-                river_code = Rivers_code[k]
 
+            
+            nRiver = nrow(Stations_sh_selection)
+            for (k in 1:nRiver) {
+                river_code = Stations_sh_selection$code[k]
+                print(river_code)
+                
                 dataEX_serie_hydro_sh_wl_code = dataEX_serie_hydro_sh_wl
                 for (cc in 1:length(dataEX_serie_hydro_sh_wl_code)) {
                     dataEX_serie_hydro_sh_wl_code[[cc]] =
@@ -2246,33 +2288,31 @@ sheet_projection_secteur = function (Stations,
                             }
                         }
 
-                        format_value = function(x) {
-                            value = signif(x, 2)
-                            if (abs(value) < 0.001) {
-                                return (round(x, 3))
-                            } else {
-                                return (value)
-                            }
-                        }
-                        
                         value = format_value(value)
-                        value = get_labels_TeX(value, unit=column_unit[cc],
-                                               is_unit_plurial=FALSE,
-                                               add_unit_space=TRUE)
+                        valueC = get_labels_TeX(value, unit=column_unit[cc],
+                                                is_unit_plurial=FALSE,
+                                                add_unit_space=TRUE,
+                                                is_unit_zero=TRUE)
 
                         if (column_name[cc] == "T") {
                             Palette_tmp = Palette_temperature
                         } else if (column_name[cc] == "R") {
                             Palette_tmp = Palette_hydro
                         }
-                        color = ifelse(grepl("-", value), Palette_tmp[1 + dColor],
-                                ifelse(grepl("+", value), Palette_tmp[nColor - dColor], ""))
-
+                        
+                        if (value < 0) {
+                            color = Palette_tmp[1 + dColor]
+                        } else if (value > 0) {
+                            color = Palette_tmp[nColor - dColor]
+                        } else {
+                            color = IPCCgrey40
+                        }
+                        
                         table = table +
                             annotate("text",
                                      x=xtmp - dx_column*0.7,
                                      y=ytmp + dy_row/2,
-                                     label=latex2exp::TeX(value),
+                                     label=latex2exp::TeX(valueC),
                                      vjust=0.5, hjust=0,
                                      size=3, family="Lato",
                                      color=color)
@@ -2399,7 +2439,7 @@ sheet_projection_secteur = function (Stations,
             # grid::grid.draw(plot)
             # dev.off()
             
-            stop()
+            # stop()
         }
     }
     return (NULL)
