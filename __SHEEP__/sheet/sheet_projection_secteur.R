@@ -23,9 +23,11 @@
 
 sheet_projection_secteur = function (Stations,
                                      Secteurs,
-                                     dataEX_criteria_climate_bySH,
+                                     dataEX_criteria_climate_secteur,
                                      dataEX_criteria_hydro,
                                      dataEX_serie_hydro,
+                                     dataEX_criteria_recharge_MESO,
+                                     dataEX_criteria_recharge_secteur,
                                      # metaEX_criteria_climate,
                                      # metaEX_criteria_hydro,
                                      # metaEX_serie_hydro,
@@ -72,9 +74,9 @@ sheet_projection_secteur = function (Stations,
 
     delta_stat_prob = 0
     
-    climate_criteria_cols = names(dataEX_criteria_climate_bySH)[sapply(dataEX_criteria_climate_bySH, is.numeric)]
-    dataEX_criteria_climate_bySH_stat =
-        dplyr::summarise(dplyr::group_by(dataEX_criteria_climate_bySH,
+    climate_criteria_cols = names(dataEX_criteria_climate_secteur)[sapply(dataEX_criteria_climate_secteur, is.numeric)]
+    dataEX_criteria_climate_secteur_stat =
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_climate_secteur,
                                          SH, GWL),
                          dplyr::across(climate_criteria_cols,
                                        ~quantile(.x, delta_stat_prob,
@@ -97,7 +99,7 @@ sheet_projection_secteur = function (Stations,
                                          sep="_", remove=FALSE)
 
     hydro_criteria_cols = names(dataEX_criteria_hydro)[sapply(dataEX_criteria_hydro, is.numeric)]
-    dataEX_criteria_hydro_bySH =
+    dataEX_criteria_hydro_secteur =
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro,
                                          GWL,
                                          Chain, EXP, GCM, RCM, BC, HM,
@@ -105,8 +107,8 @@ sheet_projection_secteur = function (Stations,
                          dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~median(.x, na.rm=TRUE)),
                          .groups="drop")
-    dataEX_criteria_hydro_bySH_stat =
-        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_bySH,
+    dataEX_criteria_hydro_secteur_stat =
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro_secteur,
                                          SH, GWL),
                          dplyr::across(hydro_criteria_cols,
                                        ~quantile(.x, delta_stat_prob,
@@ -117,6 +119,23 @@ sheet_projection_secteur = function (Stations,
                                                  na.rm=TRUE),
                                        .names="median_{.col}"),
                          dplyr::across(hydro_criteria_cols,
+                                       ~quantile(.x, 1-delta_stat_prob,
+                                                 na.rm=TRUE),
+                                       .names="max_{.col}"))
+
+    recharge_criteria_cols = names(dataEX_criteria_recharge_secteur)[sapply(dataEX_criteria_recharge_secteur, is.numeric)]
+    dataEX_criteria_recharge_secteur_stat =
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_recharge_secteur,
+                                         SH, GWL),
+                         dplyr::across(recharge_criteria_cols,
+                                       ~quantile(.x, delta_stat_prob,
+                                                 na.rm=TRUE),
+                                       .names="min_{.col}"),
+                         dplyr::across(recharge_criteria_cols,
+                                       ~quantile(.x, 0.5,
+                                                 na.rm=TRUE),
+                                       .names="median_{.col}"),
+                         dplyr::across(recharge_criteria_cols,
                                        ~quantile(.x, 1-delta_stat_prob,
                                                  na.rm=TRUE),
                                        .names="max_{.col}"))
@@ -157,7 +176,34 @@ sheet_projection_secteur = function (Stations,
                                          code, SH, GWL, EXP),
                          dplyr::across(.cols=hydro_criteria_cols,
                                        .fns=~mean(.x, na.rm=TRUE)),
-                         .groups="drop")  
+                         .groups="drop")
+
+
+    recharge_criteria_cols = names(dataEX_criteria_recharge_MESO)[sapply(dataEX_criteria_recharge_MESO, is.numeric)]
+    dataEX_criteria_recharge_MESO_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_recharge_MESO,
+                                         code_MESO, SH, GWL, EXP, GCM, RCM, BC),
+                         dplyr::across(.cols=recharge_criteria_cols,
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
+    dataEX_criteria_recharge_MESO_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_recharge_MESO_mean,
+                                         code_MESO, SH, GWL, EXP, GCM, RCM),
+                         dplyr::across(.cols=recharge_criteria_cols,
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
+    dataEX_criteria_recharge_MESO_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_recharge_MESO_mean,
+                                         code_MESO, SH, GWL, EXP, GCM),
+                         dplyr::across(.cols=recharge_criteria_cols,
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
+    dataEX_criteria_recharge_MESO_mean = 
+        dplyr::summarise(dplyr::group_by(dataEX_criteria_recharge_MESO_mean,
+                                         code_MESO, SH, GWL, EXP),
+                         dplyr::across(.cols=recharge_criteria_cols,
+                                       .fns=~mean(.x, na.rm=TRUE)),
+                         .groups="drop")
 
 
     for (cc in 1:length(dataEX_serie_hydro)) {
@@ -220,23 +266,31 @@ sheet_projection_secteur = function (Stations,
             NarraTRACC_sh_description = unlist(NarraTRACC_sh[paste0("description_", 1:4)])
             NarraTRACC_sh_color = unlist(NarraTRACC_sh[paste0("color_", 1:4)])
             
-            dataEX_criteria_climate_bySH_sh_wl = dplyr::filter(dataEX_criteria_climate_bySH,
+            dataEX_criteria_climate_secteur_sh_wl = dplyr::filter(dataEX_criteria_climate_secteur,
                                                                SH==sh, GWL == wl["GWLclean"])
 
-            dataEX_criteria_climate_bySH_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_bySH_stat,
+            dataEX_criteria_climate_secteur_stat_sh_wl = dplyr::filter(dataEX_criteria_climate_secteur_stat,
                                                                     SH==sh, GWL==wl["GWLclean"])
             
-            dataEX_criteria_hydro_bySH_sh_wl = dplyr::filter(dataEX_criteria_hydro_bySH,
+            dataEX_criteria_hydro_secteur_sh_wl = dplyr::filter(dataEX_criteria_hydro_secteur,
                                                              SH==sh, GWL == wl["GWLclean"])
             dataEX_criteria_hydro_sh_wl = dplyr::filter(dataEX_criteria_hydro,
                                                         SH==sh, GWL == wl["GWLclean"])
 
-            dataEX_criteria_hydro_bySH_stat_sh_wl = dplyr::filter(dataEX_criteria_hydro_bySH_stat,
+            dataEX_criteria_hydro_secteur_stat_sh_wl = dplyr::filter(dataEX_criteria_hydro_secteur_stat,
                                                                   SH==sh, GWL==wl["GWLclean"])
             dataEX_criteria_hydro_conf_sh_wl = dplyr::filter(dataEX_criteria_hydro_conf,
                                                              SH == sh, GWL==wl["GWLclean"])
             dataEX_criteria_hydro_mean_sh_wl = dplyr::filter(dataEX_criteria_hydro_mean,
                                                              SH == sh, GWL==wl["GWLclean"])
+
+            dataEX_criteria_recharge_secteur_sh_wl = dplyr::filter(dataEX_criteria_recharge_secteur,
+                                                                   SH==sh, GWL == wl["GWLclean"])
+            dataEX_criteria_recharge_MESO_mean_wl = dplyr::filter(dataEX_criteria_recharge_MESO_mean,
+                                                                  GWL==wl["GWLclean"])
+            dataEX_criteria_recharge_secteur_stat_sh_wl = dplyr::filter(dataEX_criteria_recharge_secteur_stat,
+                                                                        SH==sh, GWL==wl["GWLclean"])
+            
             
             dataEX_serie_hydro_sh_wl = dataEX_serie_hydro
             for (cc in 1:length(dataEX_serie_hydro_sh_wl)) {
@@ -752,7 +806,7 @@ sheet_projection_secteur = function (Stations,
                 return (result)
             }
             
-            panel_delta_variable = function (dataEX_criteria_climate_bySH_sh_wl,
+            panel_delta_variable = function (dataEX_criteria_climate_secteur_sh_wl,
                                              season) {
 
                 expand = function (X, fact=0.05) {
@@ -781,13 +835,13 @@ sheet_projection_secteur = function (Stations,
                 }
 
                 Ttick = 0.5
-                TMm_range = c(min(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaTMm_", season)]]),
-                              max(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaTMm_", season)]]))
+                TMm_range = c(min(dataEX_criteria_climate_secteur_sh_wl[[paste0("deltaTMm_", season)]]),
+                              max(dataEX_criteria_climate_secteur_sh_wl[[paste0("deltaTMm_", season)]]))
                 TMm_range =  c(floor(TMm_range[1] / Ttick) * Ttick, ceiling(TMm_range[2] / Ttick) * Ttick)
                 TMm_range = expand(TMm_range)
 
-                RR_range = c(min(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaRR_", season)]]),
-                             max(dataEX_criteria_climate_bySH_sh_wl[[paste0("deltaRR_", season)]]))
+                RR_range = c(min(dataEX_criteria_climate_secteur_sh_wl[[paste0("deltaRR_", season)]]),
+                             max(dataEX_criteria_climate_secteur_sh_wl[[paste0("deltaRR_", season)]]))
                 RR_range =  c(floor(RR_range[1] / 5) * 5, ceiling(RR_range[2] / 5) * 5)
                 RR_range = expand(RR_range)
 
@@ -826,26 +880,26 @@ sheet_projection_secteur = function (Stations,
                                        labels=get_labels_deltaR,
                                        expand=c(0, 0))
 
-                dataEX_criteria_climate_bySH_sh_wl_NO_narratrac =
-                    dplyr::filter(dataEX_criteria_climate_bySH_sh_wl,
+                dataEX_criteria_climate_secteur_sh_wl_NO_narratrac =
+                    dplyr::filter(dataEX_criteria_climate_secteur_sh_wl,
                                   !(climateChain %in% NarraTRACC_sh_climateChain))
 
                 delta_variable = delta_variable +
-                    geom_point(data=dataEX_criteria_climate_bySH_sh_wl_NO_narratrac,
+                    geom_point(data=dataEX_criteria_climate_secteur_sh_wl_NO_narratrac,
                                aes(x=get(paste0("deltaTMm_", season)),
                                    y=get(paste0("deltaRR_", season))),
                                size=1, color=IPCCgrey67)
 
                 for (k in 1:nNarraTRACC) {
-                    dataEX_criteria_climate_bySH_sh_wl_narratrac =
-                        dplyr::filter(dataEX_criteria_climate_bySH_sh_wl,
+                    dataEX_criteria_climate_secteur_sh_wl_narratrac =
+                        dplyr::filter(dataEX_criteria_climate_secteur_sh_wl,
                                       climateChain == NarraTRACC_sh_climateChain[k])
                     delta_variable = delta_variable +
-                        geom_point(data=dataEX_criteria_climate_bySH_sh_wl_narratrac,
+                        geom_point(data=dataEX_criteria_climate_secteur_sh_wl_narratrac,
                                    aes(x=get(paste0("deltaTMm_", season)),
                                        y=get(paste0("deltaRR_", season))),
                                    size=1.4, color=IPCCgrey97) + 
-                        geom_point(data=dataEX_criteria_climate_bySH_sh_wl_narratrac,
+                        geom_point(data=dataEX_criteria_climate_secteur_sh_wl_narratrac,
                                    aes(x=get(paste0("deltaTMm_", season)),
                                        y=get(paste0("deltaRR_", season))),
                                    size=1, color=NarraTRACC_sh_color[k])
@@ -854,7 +908,7 @@ sheet_projection_secteur = function (Stations,
                 return (delta_variable)
             }
 
-            delta_variable = panel_delta_variable(dataEX_criteria_climate_bySH_sh_wl, "DJF")
+            delta_variable = panel_delta_variable(dataEX_criteria_climate_secteur_sh_wl, "DJF")
     
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=delta_variable,
@@ -892,7 +946,7 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 
-            delta_variable = panel_delta_variable(dataEX_criteria_climate_bySH_sh_wl, "JJA")
+            delta_variable = panel_delta_variable(dataEX_criteria_climate_secteur_sh_wl, "JJA")
             
             climate_delta_herd = add_sheep(climate_delta_herd,
                                            sheep=delta_variable,
@@ -1082,9 +1136,9 @@ sheet_projection_secteur = function (Stations,
                     } else {
                         if (rr <= 4) {
                             id = paste0(row_id[rr], "_", column_id[cc])
-                            value = dataEX_criteria_climate_bySH_stat_sh_wl[[id]]
+                            value = dataEX_criteria_climate_secteur_stat_sh_wl[[id]]
                         } else {
-                            value = dplyr::filter(dataEX_criteria_climate_bySH_sh_wl,
+                            value = dplyr::filter(dataEX_criteria_climate_secteur_sh_wl,
                                                   climateChain == row_id[rr])[[column_id[cc]]]
                         }
 
@@ -1096,13 +1150,21 @@ sheet_projection_secteur = function (Stations,
                                 return (value)
                             }
                         }
+
+                        # print("aa")
+                        # print(value)                        
+                        # print(row_id[rr])
+                        # print(column_id[cc])
+                        # print(dataEX_criteria_climate_secteur_sh_wl)
                         
-                        value = format_value(value)
+                        value = format_value(value, thresold=1)
                         valueC = get_labels_TeX(value, unit=column_unit[cc],
                                                is_unit_plurial=FALSE,
                                                add_unit_space=TRUE,
                                                is_unit_zero=TRUE)
 
+                        # print("bb")
+                        
                         if (grepl("T", column_name[cc])) {
                             Palette_tmp = Palette_temperature
                         } else if (grepl("R", column_name[cc])) {
@@ -1243,8 +1305,6 @@ sheet_projection_secteur = function (Stations,
                         linewidth=0.28,
                         na.rm=TRUE) +
                 
-                
-                
                 geom_sf(data=Shapefiles$secteurHydro,
                         color=IPCCgrey80,
                         fill=NA, lineend="round",
@@ -1264,7 +1324,7 @@ sheet_projection_secteur = function (Stations,
                         color=IPCCgrey50,
                         fill=NA, lineend="round",
                         linewidth=0.45)
-            
+
             bbox = sf::st_bbox(secteurHydro_shp)
             aspect_plot = 6.5/8.5
             margin_factor = 0.05
@@ -1297,7 +1357,6 @@ sheet_projection_secteur = function (Stations,
                       ylim_center + ylim_range/2 * (1 + margin_factor))
 
             map = map + coord_sf(xlim=xlim, ylim=ylim, expand=FALSE)
-
 
             nlim = 9
             Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 == nlim)
@@ -1452,7 +1511,68 @@ sheet_projection_secteur = function (Stations,
                                       height=hydroMap_variable_title_height,
                                       verbose=verbose)
 
-            map_recharge = map
+
+            
+            MESO = Shapefiles$MESO
+            MESO = dplyr::filter(MESO, CdEuMasseD %in% dataEX_criteria_recharge_MESO_mean_wl$code_MESO)
+            colors = get_colors(dataEX_criteria_recharge_MESO_mean_wl$deltaRecharge,
+                                upBin=Palette_bin$upBin,
+                                lowBin=Palette_bin$lowBin,
+                                Palette=Palette_hydro)
+            dataEX_criteria_recharge_MESO_mean_wl$color = colors
+            MESO = dplyr::full_join(MESO,
+                                    dplyr::select(dataEX_criteria_recharge_MESO_mean_wl,
+                                                  CdEuMasseD=code_MESO,
+                                                  color),
+                                    by="CdEuMasseD")
+            
+            map_recharge = ggplot() + theme_void() + cf +
+                theme(plot.margin=margin_map) +
+                
+                geom_sf(data=Shapefiles$france,
+                        color=NA, alpha=0.35,
+                        fill=IPCCgrey97) +
+                
+                
+                geom_sf(data=MESO,
+                        color=NA,
+                        fill=MESO$color) +
+    
+    
+                geom_sf(data=Shapefiles$river,
+                        color=INRAElightcyan,#"#d1ecec",
+                        fill=NA,
+                        linewidth=0.22,
+                        na.rm=TRUE) +
+                geom_sf(data=rivers_in_secteur,
+                        color=INRAElightcyan,
+                        fill=NA,
+                        linewidth=0.28,
+                        na.rm=TRUE) +
+                
+                # geom_sf(data=Shapefiles$secteurHydro,
+                        # color=IPCCgrey80,
+                        # fill=NA, lineend="round",
+                        # linewidth=0.28) +
+                
+                geom_sf(data=Shapefiles$bassinHydro,
+                        color=IPCCgrey67,
+                        fill=NA, lineend="round",
+                        linewidth=0.29) +
+                
+                geom_sf(data=Shapefiles$france,
+                        color=IPCCgrey48,
+                        fill=NA, lineend="round",
+                        linewidth=0.30) +
+                
+                geom_sf(data=secteurHydro_shp,
+                        color=IPCCgrey50,
+                        fill=NA, lineend="round",
+                        linewidth=0.45)
+
+            map_recharge = map_recharge + coord_sf(xlim=xlim, ylim=ylim, expand=FALSE)
+            
+            
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_recharge,
@@ -1839,7 +1959,6 @@ sheet_projection_secteur = function (Stations,
             nRiver = nrow(Stations_sh_selection)
             for (k in 1:nRiver) {
                 river_code = Stations_sh_selection$code[k]
-                print(river_code)
                 
                 dataEX_serie_hydro_sh_wl_code = dataEX_serie_hydro_sh_wl
                 for (cc in 1:length(dataEX_serie_hydro_sh_wl_code)) {
@@ -2156,6 +2275,11 @@ sheet_projection_secteur = function (Stations,
                        "median",
                        "min",
                        NarraTRACC_sh_Chain)
+            row_id_climateChain = c("",
+                                    "max",
+                                    "median",
+                                    "min",
+                                    NarraTRACC_sh_climateChain)
             row_name = c("",
                          "maximum",
                          "médiane",
@@ -2270,40 +2394,40 @@ sheet_projection_secteur = function (Stations,
                                      color=IPCCgrey23)
                     } else {
                         if (grepl("Recharge", column_id[cc])) {
-                            # if (rr <= 4) {
-                            #     id = paste0(row_id[rr], "_", column_id[cc])
-                            #     value = dataEX_criteria_recharge_bySH_stat_sh_wl[[id]]
-                            # } else {
-                            #     value = dplyr::filter(dataEX_criteria_recharge_bySH_sh_wl,
-                            #                           Chain == row_id[rr])[[column_id[cc]]]
-                            # }
-                            value = 1
+                            if (rr <= 4) {
+                                id = paste0(row_id_climateChain[rr], "_", column_id[cc])
+                                value = dataEX_criteria_recharge_secteur_stat_sh_wl[[id]]
+                            } else {
+                                value = dplyr::filter(dataEX_criteria_recharge_secteur_sh_wl,
+                                                      climateChain == row_id_climateChain[rr])[[column_id[cc]]]
+                            }
                         } else {
                             if (rr <= 4) {
                                 id = paste0(row_id[rr], "_", column_id[cc])
-                                value = dataEX_criteria_hydro_bySH_stat_sh_wl[[id]]
+                                value = dataEX_criteria_hydro_secteur_stat_sh_wl[[id]]
                             } else {
-                                value = dplyr::filter(dataEX_criteria_hydro_bySH_sh_wl,
+                                value = dplyr::filter(dataEX_criteria_hydro_secteur_sh_wl,
                                                       Chain == row_id[rr])[[column_id[cc]]]
                             }
                         }
 
-                        value = format_value(value)
+                        # print("aa")
+                        # print(value)                        
+                        # print(row_id[rr])
+                        # print(column_id[cc])
+                        # print(dataEX_criteria_hydro_secteur_sh_wl$Chain)
+                        
+                        value = format_value(value, thresold=0.1)
                         valueC = get_labels_TeX(value, unit=column_unit[cc],
                                                 is_unit_plurial=FALSE,
                                                 add_unit_space=TRUE,
                                                 is_unit_zero=TRUE)
-
-                        if (column_name[cc] == "T") {
-                            Palette_tmp = Palette_temperature
-                        } else if (column_name[cc] == "R") {
-                            Palette_tmp = Palette_hydro
-                        }
+                        # print("bb")
                         
                         if (value < 0) {
-                            color = Palette_tmp[1 + dColor]
+                            color = Palette_hydro[1 + dColor]
                         } else if (value > 0) {
-                            color = Palette_tmp[nColor - dColor]
+                            color = Palette_hydro[nColor - dColor]
                         } else {
                             color = IPCCgrey40
                         }
