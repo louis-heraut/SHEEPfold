@@ -320,8 +320,8 @@ sheet_projection_secteur = function (Stations,
             info_title_height = 1.5
             info_legend_height = 1
             
-            info_minimap_width = 1
-            info_title_width = 2
+            info_minimap_width = 1.1
+            info_title_width = 2.4
             info_logo_width = 1
 
             info_herd = bring_grass(verbose=verbose)
@@ -428,12 +428,15 @@ sheet_projection_secteur = function (Stations,
             dy_region = 0.29
             dy_basin = 0.15
             
-            title_text = strwrap(paste0(sh, " - ", secteur$secteur), width=38)
+            title_text = unlist(strsplit(paste0(sh, " - ", secteur$secteur_cut), "[ ][|][ ]"))
             nLine = length(title_text)
             title_text[1] = sub("[-] ", "- \\\\textbf{", title_text[1])
             title_text[1] = paste0(title_text[1], "}")
             if (nLine > 1) {
                 title_text[2:nLine] = sapply(title_text[2:nLine], function (x) {paste0("\\textbf{", x, "}")})
+                y0 = 0.98
+            } else {
+                y0 = 0.9
             }
             
             title = ggplot() +
@@ -444,7 +447,7 @@ sheet_projection_secteur = function (Stations,
             for (l in 1:nLine) {
                 title = title +
                     annotate("text",
-                             x=0, y=0.98-dy_newline*(l-1),
+                             x=0, y=y0-dy_newline*(l-1),
                              label=latex2exp::TeX(title_text[l]),
                              size=5.4, hjust=0, vjust=1,
                              family="Raleway",
@@ -456,13 +459,13 @@ sheet_projection_secteur = function (Stations,
             
             title = title +
                 annotate("text",
-                         x=0, y=0.98-dy_newline*(nLine-1) - dy_region,
+                         x=0, y=y0-dy_newline*(nLine-1) - dy_region,
                          label=latex2exp::TeX(region),
                          size=3, hjust=0, vjust=1,
                          family="Lato",
                          color=TRACCblue) +
                 annotate("text",
-                         x=0, y=0.98-dy_newline*(nLine-1) - dy_region - dy_basin,
+                         x=0, y=y0-dy_newline*(nLine-1) - dy_region - dy_basin,
                          label=latex2exp::TeX(basin),
                          size=3, hjust=0, vjust=1,
                          family="Lato",
@@ -576,10 +579,10 @@ sheet_projection_secteur = function (Stations,
                                   verbose=verbose)
 
             if (wl["RWLclean"] == "RWL-40") {
-                shift_C = 0.6
+                shift_C = 0.67
                 dx_shift = 0
             } else if (wl["RWLclean"] == "RWL-27") {
-                shift_C = 1.1
+                shift_C = 1.22
                 dx_shift = 0.2
             }
             
@@ -589,7 +592,7 @@ sheet_projection_secteur = function (Stations,
                 theme(plot.margin=margin(t=0, r=0,
                                          b=0, l=0, "mm")) +
                 annotate("text",
-                         x=1.5 - dx_shift, y=0.54,
+                         x=1.35 - dx_shift, y=0.54,
                          label="vivre à",
                          size=3, hjust=0, vjust=0.5,
                          family="Lato",
@@ -640,6 +643,37 @@ sheet_projection_secteur = function (Stations,
                              width=width,
                              verbose=verbose)
 
+
+            # herd = add_sheep(herd,
+            #                  sheep=contour(),
+            #                  id="climate",
+            #                  height=climate_height,
+            #                  width=width,
+            #                  verbose=verbose)
+            # herd = add_sheep(herd,
+            #                  sheep=contour(),
+            #                  id="hydroMap",
+            #                  height=hydroMap_height,
+            #                  width=width,
+            #                  verbose=verbose)
+            # herd = add_sheep(herd,
+            #                  sheep=contour(),
+            #                  id="hydroQM",
+            #                  height=hydroQM_height,
+            #                  width=width,
+            #                  verbose=verbose)
+            # herd = add_sheep(herd,
+            #                  sheep=contour(),
+            #                  id="hydroTable",
+            #                  height=hydroTable_height,
+            #                  width=width,
+            #                  verbose=verbose)
+            # herd = add_sheep(herd,
+            #                  sheep=contour(),
+            #                  id="foot",
+            #                  height=foot_height,
+            #                  width=width,
+            #                  verbose=verbose)
 
 ### Climate __________________________________________________________
             climate_plan = matrix(c(
@@ -1394,10 +1428,10 @@ sheet_projection_secteur = function (Stations,
             map = map + coord_sf(xlim=xlim_map, ylim=ylim_map, expand=FALSE)
 
             nlim = 9
-            Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 == nlim)
+            Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 >= nlim)
             while (nrow(Stations_sh_selection) < 3 & nrow(Stations_sh_selection) < nrow(Stations_sh)) {
                 nlim = nlim - 1
-                Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 == nlim)
+                Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 >= nlim)
             }
 
             Stations_sh_selection = dplyr::filter(Stations_sh_selection,
@@ -1405,7 +1439,7 @@ sheet_projection_secteur = function (Stations,
                                                   row_number() == which.min(abs(surface_km2-median(surface_km2,
                                                                                                    na.rm=TRUE))) |
                                                   surface_km2 == min(surface_km2, na.rm=TRUE))
-            Stations_sh_selection = dplyr::arrange(Stations_sh_selection, surface_km2)
+            Stations_sh_selection = dplyr::arrange(Stations_sh_selection, dplyr::desc(surface_km2))
 
             
 
@@ -1480,7 +1514,6 @@ sheet_projection_secteur = function (Stations,
                                                                    # code %in% Stations_sh_selection$code)
             # dataEX_criteria_hydro_plot_sh_wl_NOlight = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl,
                                                                    # !(code %in% Stations_sh_selection$code))
-
             map_etiage = map
             for (l in layers) {
                 dataEX_plot_tmp = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl, layer==l)
@@ -1607,9 +1640,28 @@ sheet_projection_secteur = function (Stations,
                         fill=NA, lineend="round",
                         linewidth=0.45)
 
-            map_recharge = map_recharge + coord_sf(xlim=xlim_map, ylim=ylim_map, expand=FALSE)
+
+            dataEX_criteria_hydro_plot_sh_wl_light = dplyr::filter(dataEX_criteria_hydro_plot_sh_wl,
+                                                                   code %in% Stations_sh_selection$code)
+            dataEX_criteria_hydro_plot_sh_wl_light = dplyr::left_join(dataEX_criteria_hydro_plot_sh_wl_light,
+                                                                      dplyr::select(Stations_sh_selection, code,
+                                                                                    surface_km2),
+                                                                      by="code")
+            dataEX_criteria_hydro_plot_sh_wl_light = dplyr::arrange(dataEX_criteria_hydro_plot_sh_wl_light,
+                                                                    dplyr::desc(surface_km2))
             
+            dataEX_criteria_hydro_plot_sh_wl_light$label = 1:nrow(dataEX_criteria_hydro_plot_sh_wl_light)
             
+            map_recharge = map_recharge + coord_sf(xlim=xlim_map, ylim=ylim_map, expand=FALSE) +
+                shadowtext::geom_shadowtext(data=dataEX_criteria_hydro_plot_sh_wl_light,
+                                            aes(x=XL93_m,
+                                                y=YL93_m,
+                                                label=label),
+                                            family="Lato",
+                                            fontface="bold",
+                                            vjust=0.5, hjust=0.5,
+                                            color=IPCCgrey35, size=2,
+                                            bg.color=IPCCgrey97, bg.r=0.15)
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=map_recharge,
@@ -2108,11 +2160,11 @@ sheet_projection_secteur = function (Stations,
             color_minus = Palette_hydro[1 + dColor]
             color_plus = Palette_hydro[nColor_hydro - dColor]
 
-            
             nRiver = nrow(Stations_sh_selection)
             for (k in 1:nRiver) {
                 river_code = Stations_sh_selection$code[k]
-                
+                river_name = Stations_sh_selection$river_name[k]
+
                 dataEX_serie_hydro_sh_wl_code = dataEX_serie_hydro_sh_wl
                 for (cc in 1:length(dataEX_serie_hydro_sh_wl_code)) {
                     dataEX_serie_hydro_sh_wl_code[[cc]] =
@@ -2124,7 +2176,7 @@ sheet_projection_secteur = function (Stations,
                                   code == river_code)
                 
                 river_surface = Stations$surface_km2[Stations$code == river_code]
-                text = paste0("\\textbf{", river_code, "} \\;",
+                text = paste0(k, ". \\textbf{", river_code, " - ", river_name, "} \\;",
                               " (", signif(river_surface, 3), " km$^2$)")
                 river_name = ggplot() + theme_void() +
                     theme(plot.background=element_rect(fill=IPCCgrey97,
@@ -2135,9 +2187,9 @@ sheet_projection_secteur = function (Stations,
                     scale_y_continuous(limits=c(0, 1),
                                        expand=c(0, 0)) +
                     annotate("text",
-                             x=0.5, y=0.5,
+                             x=0, y=0.5,
                              label=latex2exp::TeX(text),
-                             size=2.4, hjust=0.5, vjust=0.5,
+                             size=2.4, hjust=0, vjust=0.5,
                              family="Lato",
                              color=IPCCgrey35)
                 
@@ -2146,6 +2198,7 @@ sheet_projection_secteur = function (Stations,
                                          id=paste0("river_name_", k),
                                          height=hydroQM_river_name_height,
                                          width=hydroQM_river_width,
+                                         label=paste0("align_", k),
                                          verbose=verbose)
 
                 river_ref = ggplot() + coord_cartesian(clip="off") + 
@@ -2322,12 +2375,7 @@ sheet_projection_secteur = function (Stations,
                                  # color=plot_color[s],
                                  # linewidth=0.4,
                                  # alpha=0.5,
-    # lineend="round")
-    
-                
-
-                
-                
+                # lineend="round")
                 
                 hydroQM_herd = add_sheep(hydroQM_herd,
                                          sheep=river_delta,
