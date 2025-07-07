@@ -260,13 +260,15 @@ sheet_projection_secteur = function (Stations,
             
             wl = WL[[j]]
             rwl = as.numeric(wl["RWL"])
-            print(paste0(j, "/", nWL, " so ", round(j/nWL*100, 1), "% done -> ", wl["RWL"]))
-
+            if (verbose) {
+                print(paste0(j, "/", nWL, " so ", round(j/nWL*100, 1), "% done -> ", wl["RWL"]))
+            }
+            
             NarraTRACC = NarraTRACC_selection[[wl["RWLclean"]]]
             NarraTRACC_sh = dplyr::filter(NarraTRACC, SH == sh)
             NarraTRACC_sh_Chain = unlist(NarraTRACC_sh[paste0("Chain_", 1:4)])
             NarraTRACC_sh_climateChain = unlist(NarraTRACC_sh[paste0("climateChain_", 1:4)])
-            NarraTRACC_sh_name = unlist(NarraTRACC_sh[paste0("name_", 1:4)])
+            NarraTRACC_sh_name = gsub("RWL", "", unlist(NarraTRACC_sh[paste0("name_", 1:4)]))
             NarraTRACC_sh_description = unlist(NarraTRACC_sh[paste0("description_", 1:4)])
             NarraTRACC_sh_color = unlist(NarraTRACC_sh[paste0("color_", 1:4)])
             
@@ -314,7 +316,7 @@ sheet_projection_secteur = function (Stations,
             ### Info ________________________________________________________
             info_plan = matrix(c(
                 "minimap", "title", "logo",
-                "minimap", "legend", "logo"
+                "minimap", "legend", "legend"
             ), ncol=3, byrow=TRUE)
 
             info_title_height = 1.5
@@ -493,11 +495,11 @@ sheet_projection_secteur = function (Stations,
             dy_title = 0.27
             dy_newline = 0.17
             
-            dx0 = 0.02
-            dx_narratracc = 0.01
-            dx_line = 0.05
+            dx0 = 0.01
+            dx_narratracc = 0
+            dx_line = 0.03
             p_line = 0.75
-            dx_text = 0.03
+            dx_text = 0.02
 
             linewidth = 1.1
             
@@ -531,6 +533,7 @@ sheet_projection_secteur = function (Stations,
                              color=IPCCgrey35)
             }
 
+            
             narratracc = narratracc +
                 scale_x_continuous(limits=c(0, 1),
                                    expand=c(0, 0)) +
@@ -544,13 +547,12 @@ sheet_projection_secteur = function (Stations,
                                   verbose=verbose)
             
             #### Info logo _______________________________________________________
-            logo_plan = matrix(c("Explore2",
-                                 "TRACC",
+            logo_plan = matrix(c("TRACC",
                                  "RWL"),
                                ncol=1,
                                byrow=TRUE)
 
-            logo_Explore2_height = 1
+            # logo_Explore2_height = 1
             logo_TRACC_height = 1
             logo_RWL_height = 1.2
             
@@ -558,20 +560,20 @@ sheet_projection_secteur = function (Stations,
             logo_herd = plan_of_herd(logo_herd, logo_plan,
                                      verbose=verbose)
             
-            Explore2_grob = grid::rasterGrob(png::readPNG(logo_info[["Explore2"]]["path"]),
-                                             vjust=0.6,
-                                             hjust=0.5,
-                                             height=0.8)
-            logo_herd = add_sheep(logo_herd,
-                                  sheep=Explore2_grob,
-                                  id="Explore2",
-                                  height=logo_Explore2_height,
-                                  verbose=verbose)
+            # Explore2_grob = grid::rasterGrob(png::readPNG(logo_info[["Explore2"]]["path"]),
+            #                                  vjust=0.6,
+            #                                  hjust=0.5,
+            #                                  height=0.8)
+            # logo_herd = add_sheep(logo_herd,
+            #                       sheep=Explore2_grob,
+            #                       id="Explore2",
+            #                       height=logo_Explore2_height,
+            #                       verbose=verbose)
             
             TRACC_grob = grid::rasterGrob(png::readPNG(logo_info[["TRACC"]]["path"]),
-                                          vjust=0.5,
+                                          vjust=0.8,
                                           hjust=0.5,
-                                          height=0.7)        
+                                          height=0.84)        
             logo_herd = add_sheep(logo_herd,
                                   sheep=TRACC_grob,
                                   id="TRACC",
@@ -588,33 +590,28 @@ sheet_projection_secteur = function (Stations,
             
             RWL = ggplot() +
                 theme_void() +
-                coord_fixed() +
                 theme(plot.margin=margin(t=0, r=0,
                                          b=0, l=0, "mm")) +
                 annotate("text",
-                         x=1.35 - dx_shift, y=0.54,
+                         x=1.35 - dx_shift,
+                         y=0.44,
                          label="vivre à",
                          size=3, hjust=0, vjust=0.5,
                          family="Lato",
                          color=wl["color"]) +
                 annotate("text",
-                         x=2.5 - dx_shift, y=0.55,
+                         x=2.5 - dx_shift,
+                         y=0.45,
                          label=latex2exp::TeX(paste0("\\textbf{+", wl["RWL"], "}")),
                          size=6, hjust=0, vjust=0.5,
                          family="Raleway",
                          color=wl["color"]) +
                 annotate("text",
-                         x=2.5+shift_C - dx_shift, y=0.55,
+                         x=2.5+shift_C - dx_shift,
+                         y=0.45,
                          label=latex2exp::TeX("\\textbf{\\small{°C}}"),
                          size=6, hjust=0, vjust=0.5,
                          family="Raleway",
-                         color=wl["color"]) +
-                
-                annotate("text",
-                         x=2.5, y=0.09,
-                         label=latex2exp::TeX("référence 1991-2020"),
-                         size=2, hjust=0.5, vjust=0.5,
-                         family="Lato",
                          color=wl["color"]) +
     
                 scale_x_continuous(limits=c(0, 5),
@@ -692,7 +689,7 @@ sheet_projection_secteur = function (Stations,
             climate_table_width = 0.9
 
 #### Title __________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") \\; \\; \\; \\;\\;- Changements relatifs de précipitation (%) en fonction des changements de température (°C)")
+            title_text = paste0("(", letters[id_letter], ") \\; \\; \\; \\;\\;- Changements relatifs de précipitation (%) en fonction des changements de température (°C) \\;\\small{référence 1991-2020}")
             id_letter = id_letter + 1
             
             title = ggplot() + theme_void() +
@@ -929,13 +926,13 @@ sheet_projection_secteur = function (Stations,
                                  color=IPCCgrey60,
                                  linewidth=0.33)
                 }
-                if (TMm_range[1] <= rwl & rwl <= TMm_range[2]) {
-                    delta_variable = delta_variable +
-                        annotate("line",
-                                 x=rwl, y=RR_range,
-                                 color=IPCCgrey60,
-                                 linewidth=0.33)
-                }
+                # if (TMm_range[1] <= rwl & rwl <= TMm_range[2]) {
+                    # delta_variable = delta_variable +
+                        # annotate("line",
+                                 # x=rwl, y=RR_range,
+                                 # color=IPCCgrey60,
+                                 # linewidth=0.33)
+                # }
 
                 delta_variable = delta_variable +    
                     theme_IPCC(is_plot.background=TRUE,
@@ -1077,17 +1074,22 @@ sheet_projection_secteur = function (Stations,
                           NarraTRACC_sh_color)
 
 
-            get_labels_TeX = function(x, unit, is_unit_plurial, add_unit_space, is_unit_zero=FALSE) {
+            get_labels_TeX = function(x, unit, is_unit_plurial, add_unit_space, is_unit_zero=FALSE,
+                                      digits=NULL) {
                 unit_suffixed = ifelse(!is_unit_plurial, unit,
                                 ifelse(x != 0, paste0(unit, "s"), unit))
-                result = ifelse(add_unit_space,
+                unit_formated = ifelse(add_unit_space,
                                 paste0("\\small{ ", unit_suffixed, "}"),
                                 paste0(unit_suffixed))
-                x_text = x
+                if (!is.null(digits)) {
+                    x_text = formatC(x, format="f", digits=digits)
+                } else {
+                    x_text = x
+                }
                 x_text = ifelse(x > 0, paste0("+", x_text), as.character(x_text))
                 x_text = ifelse(x == 0, paste0(" ", x_text), as.character(x_text))
                 result = ifelse((x < 0 | x > 0) | is_unit_zero,
-                                paste0("\\textbf{", x_text, "}", result, ""),
+                                paste0("\\textbf{", x_text, "}", unit_formated, ""),
                                 paste0("\\textbf{", x_text, "}"))
                 return (result)
             }
@@ -1209,11 +1211,11 @@ sheet_projection_secteur = function (Stations,
                                                   climateChain == row_id[rr])[[column_id[cc]]]
                         }
 
-                        format_value = function(x) {
+                        format_value = function(x, n=0) {
                             if (abs(x) >= 100) {
-                                value = round(x, -1)
+                                value = round(x, n-1)
                             } else {
-                                value = round(x, 0)                                
+                                value = round(x, n)                                
                             }
                             return (value)
                         }
@@ -1223,22 +1225,24 @@ sheet_projection_secteur = function (Stations,
                         # print(row_id[rr])
                         # print(column_id[cc])
                         # print(dataEX_criteria_climate_secteur_sh_wl)
-                        
-                        value = format_value(value)
-                        valueC = get_labels_TeX(value, unit=column_unit[cc],
-                                               is_unit_plurial=FALSE,
-                                               add_unit_space=TRUE,
-                                               is_unit_zero=TRUE)
-
                         # print("bb")
                         
                         if (grepl("T", column_name[cc])) {
+                            value = format_value(value, 1)
                             Palette_tmp = Palette_temperature
                             nColor_tmp = nColor_temperature
+                            digits = 1
                         } else if (grepl("P", column_name[cc])) {
+                            value = format_value(value, 0)
                             Palette_tmp = Palette_hydro
                             nColor_tmp = nColor_hydro
+                            digits = NULL
                         }
+                        valueC = get_labels_TeX(value, unit=column_unit[cc],
+                                                is_unit_plurial=FALSE,
+                                                add_unit_space=TRUE,
+                                                is_unit_zero=TRUE,
+                                                digits=digits)
 
                         if (value < 0) {
                             color = Palette_tmp[1 + dColor]
@@ -1250,10 +1254,10 @@ sheet_projection_secteur = function (Stations,
 
                         table = table +
                             annotate("text",
-                                     x=xtmp - dx_column*0.7,
+                                     x=xtmp - dx_column*0.3,
                                      y=ytmp + dy_row/2,
                                      label=latex2exp::TeX(valueC),
-                                     vjust=0.5, hjust=0,
+                                     vjust=0.5, hjust=1,
                                      size=3, family="Lato",
                                      color=color)
                     }                
@@ -1427,6 +1431,7 @@ sheet_projection_secteur = function (Stations,
 
             map = map + coord_sf(xlim=xlim_map, ylim=ylim_map, expand=FALSE)
 
+
             nlim = 9
             Stations_sh_selection = dplyr::filter(Stations_sh, n_rcp85 >= nlim)
             while (nrow(Stations_sh_selection) < 3 & nrow(Stations_sh_selection) < nrow(Stations_sh)) {
@@ -1441,7 +1446,7 @@ sheet_projection_secteur = function (Stations,
                                                   surface_km2 == min(surface_km2, na.rm=TRUE))
             Stations_sh_selection = dplyr::arrange(Stations_sh_selection, dplyr::desc(surface_km2))
 
-            
+
 
 #### etiage __________________________________________________________
             title_text = paste0("(", letters[id_letter], ") \\textbf{VCN10} - Changements relatifs de l'intensité des étiages (%)")
@@ -1768,51 +1773,51 @@ sheet_projection_secteur = function (Stations,
             #              shape=dataEX_criteria_hydro_plot_sh_wl_light$shape)
 
 
-            width_map = xlim_map[2]-xlim_map[1]
-            target_width = width_map/5
-            echelle = c(0,
-                        max(pretty(c(0, target_width^0.9), n=1)),
-                        max(pretty(c(0, target_width), n=1)))
+            # width_map = xlim_map[2]-xlim_map[1]
+            # target_width = width_map/5
+            # echelle = c(0,
+            #             max(pretty(c(0, target_width^0.9), n=1)),
+            #             max(pretty(c(0, target_width), n=1)))
             
-            echelle_line_size = 0.3
-            echelle_size = 2
-            echelle_km_size = 1.8
-            echelle_tick_height = 2
+            # echelle_line_size = 0.3
+            # echelle_size = 2
+            # echelle_km_size = 1.8
+            # echelle_tick_height = 2
 
-            ymin_km_shift = 2
-            ymin_km_value_shift = 1
+            # ymin_km_shift = 2
+            # ymin_km_value_shift = 1
 
-            x_echelle_pct = 3
-            y_echelle_pct = 4
-            xmin_ech = gpct(x_echelle_pct, xlim_map, shift=TRUE)
-            ymin_ech = gpct(y_echelle_pct, ylim_map, shift=TRUE)
-            ymin_km = gpct(max(c(y_echelle_pct-ymin_km_shift, 0)), ylim_map, shift=TRUE)
-            ymax_ech = ymin_ech + gpct(echelle_tick_height, ylim_map)
+            # x_echelle_pct = 3
+            # y_echelle_pct = 4
+            # xmin_ech = gpct(x_echelle_pct, xlim_map, shift=TRUE)
+            # ymin_ech = gpct(y_echelle_pct, ylim_map, shift=TRUE)
+            # ymin_km = gpct(max(c(y_echelle_pct-ymin_km_shift, 0)), ylim_map, shift=TRUE)
+            # ymax_ech = ymin_ech + gpct(echelle_tick_height, ylim_map)
 
-            map_crue = map_crue +
-                annotate("line",
-                         x=c(xmin_ech, max(echelle)+xmin_ech),
-                         y=c(ymin_ech, ymin_ech),
-                          color=IPCCgrey40, size=echelle_line_size,
-                         lineend="round") +
-                annotate("text",
-                         x=max(echelle)+xmin_ech+gpct(1, xlim_map), y=ymin_km,
-                         vjust=0, hjust=0, label="km",
-                         family="Lato",
-                         color=IPCCgrey40, size=echelle_km_size)
+            # map_crue = map_crue +
+            #     annotate("line",
+            #              x=c(xmin_ech, max(echelle)+xmin_ech),
+            #              y=c(ymin_ech, ymin_ech),
+            #               color=IPCCgrey40, size=echelle_line_size,
+            #              lineend="round") +
+            #     annotate("text",
+            #              x=max(echelle)+xmin_ech+gpct(1, xlim_map), y=ymin_km,
+            #              vjust=0, hjust=0, label="km",
+            #              family="Lato",
+            #              color=IPCCgrey40, size=echelle_km_size)
 
-            for (x_ech in echelle) {
-                map_crue = map_crue +
-                    annotate("segment",
-                             x=x_ech+xmin_ech, xend=x_ech+xmin_ech, y=ymin_ech, yend=ymax_ech,
-                             color=IPCCgrey40, size=echelle_line_size,
-                             lineend="round") +
-                    annotate("text",
-                             x=x_ech+xmin_ech, y=ymax_ech+gpct(ymin_km_value_shift, ylim_map),
-                             vjust=0, hjust=0.5, label=x_ech/1E3,
-                             family="Lato",
-                             color=IPCCgrey40, size=echelle_size)
-            }
+            # for (x_ech in echelle) {
+            #     map_crue = map_crue +
+            #         annotate("segment",
+            #                  x=x_ech+xmin_ech, xend=x_ech+xmin_ech, y=ymin_ech, yend=ymax_ech,
+            #                  color=IPCCgrey40, size=echelle_line_size,
+            #                  lineend="round") +
+            #         annotate("text",
+            #                  x=x_ech+xmin_ech, y=ymax_ech+gpct(ymin_km_value_shift, ylim_map),
+            #                  vjust=0, hjust=0.5, label=x_ech/1E3,
+            #                  family="Lato",
+            #                  color=IPCCgrey40, size=echelle_size)
+            # }
             
             
             hydroMap_herd = add_sheep(hydroMap_herd,
@@ -1984,7 +1989,23 @@ sheet_projection_secteur = function (Stations,
                                              colorText=IPCCgrey40,
                                              colorLine=IPCCgrey40,
                                              on_circle=FALSE,
-                                             margin=margin(t=0, r=1, b=1, l=2, "mm"))
+                                             margin=margin(t=-1, r=1, b=2, l=2, "mm"))
+
+            colorbar = colorbar +
+                annotate("text",
+                         x=0.7, y=-1,
+                         label=latex2exp::TeX("\\small{référence}"),
+                         family="Lato",
+                         color=IPCCgrey40, 
+                         vjust=0, hjust=0.5,
+                         size=2.5) + 
+                annotate("text",
+                         x=0.7, y=-1.5,
+                         label=latex2exp::TeX("\\small{1991-2020}"),
+                         family="Lato",
+                         color=IPCCgrey40,
+                         vjust=0, hjust=0.5,
+                         size=2.5)
             
             hydroMap_herd = add_sheep(hydroMap_herd,
                                       sheep=colorbar,
@@ -2037,7 +2058,7 @@ sheet_projection_secteur = function (Stations,
                                      verbose=verbose)
 
 #### title ___________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") \\textbf{QM} - Régime hydrologique et changements relatifs des débits mensuels moyens pour trois bassins versants")
+            title_text = paste0("(", letters[id_letter], ") \\textbf{QM} - Régime hydrologique et changements relatifs des débits mensuels moyens pour trois bassins versants \\;\\small{référence 1991-2020}")
             id_letter = id_letter + 1
             
             title = ggplot() + theme_void() +
@@ -2161,7 +2182,41 @@ sheet_projection_secteur = function (Stations,
             color_plus = Palette_hydro[nColor_hydro - dColor]
 
             nRiver = nrow(Stations_sh_selection)
-            for (k in 1:nRiver) {
+            for (k in 1:3) {
+                if (k > nRiver) {
+                    plot = ggplot() + theme_void() +
+                        theme(plot.background=element_rect(fill=IPCCgrey97,
+                                                           color=NA))
+                    hydroQM_herd = add_sheep(hydroQM_herd,
+                                             sheep=plot,
+                                             id=paste0("river_name_", k),
+                                             height=hydroQM_river_name_height,
+                                             width=hydroQM_river_width,
+                                             label=paste0("align_", k),
+                                             verbose=verbose)
+                    hydroQM_herd = add_sheep(hydroQM_herd,
+                                             sheep=plot,
+                                             id=paste0("river_ref_", k),
+                                             height=hydroQM_river_graph_height,
+                                             width=hydroQM_river_width,
+                                             label=paste0("align_", k),
+                                             verbose=verbose)
+                    hydroQM_herd = add_sheep(hydroQM_herd,
+                                             sheep=plot,
+                                             id=paste0("river_delta_", k),
+                                             height=hydroQM_river_graph_height,
+                                             width=hydroQM_river_width,
+                                             label=paste0("align_", k),
+                                             verbose=verbose)
+                    hydroQM_herd = add_sheep(hydroQM_herd,
+                                             sheep=plot,
+                                             id=paste0("axis_", k),
+                                             height=hydroQM_axis_height,
+                                             label=paste0("align_", k),
+                                             verbose=verbose)
+                    next
+                }
+                
                 river_code = Stations_sh_selection$code[k]
                 river_name = Stations_sh_selection$river_name[k]
 
@@ -2176,8 +2231,8 @@ sheet_projection_secteur = function (Stations,
                                   code == river_code)
                 
                 river_surface = Stations$surface_km2[Stations$code == river_code]
-                text = paste0(k, ". \\textbf{", river_code, " - ", river_name, "} \\;",
-                              " (", signif(river_surface, 3), " km$^2$)")
+                text = paste0(k, ". \\textbf{", river_code, " - ", river_name, "} \\small{",
+                              " (", signif(river_surface, 3), " km$^2$)}")
                 river_name = ggplot() + theme_void() +
                     theme(plot.background=element_rect(fill=IPCCgrey97,
                                                        color=NA),
@@ -2433,7 +2488,7 @@ sheet_projection_secteur = function (Stations,
                                            verbose=verbose)
 
 #### title ___________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") Changements relatifs projetés en débits et recharge (statistiques sur l'ensemble des médianes spatiales des écarts relatifs)")
+            title_text = paste0("(", letters[id_letter], ") Changements relatifs projetés en débits et recharge (statistiques sur l'ensemble des médianes spatiales des écarts relatifs) \\;\\small{référence 1991-2020}")
             id_letter = id_letter + 1
             
             title = ggplot() + theme_void() +
@@ -2521,7 +2576,7 @@ sheet_projection_secteur = function (Stations,
 
             table = ggplot() + theme_void() +
                 theme(plot.margin=margin(t=0, r=0,
-                                         b=1, l=0, "mm")) +
+                                         b=2, l=0, "mm")) +
                 scale_x_continuous(limits=c(0, xmax),
                                    expand=c(0, 0)) +
                 scale_y_continuous(limits=c(0, ymax),
@@ -2625,31 +2680,32 @@ sheet_projection_secteur = function (Stations,
                         # print(row_id[rr])
                         # print(column_id[cc])
                         # print(dataEX_criteria_hydro_secteur_sh_wl$Chain)
-                        
-                        value = format_value(value)
-                        valueC = get_labels_TeX(value, unit=column_unit[cc],
-                                                is_unit_plurial=FALSE,
-                                                add_unit_space=TRUE,
-                                                is_unit_zero=TRUE)
-                        # print("bb")
-                        
-                        if (value < 0) {
-                            color = Palette_hydro[1 + dColor]
-                        } else if (value > 0) {
-                            color = Palette_hydro[nColor_hydro - dColor]
-                        } else {
-                            color = IPCCgrey40
+
+                        if (!identical(value, numeric(0))) {
+                            value = format_value(value, 0)
+                            valueC = get_labels_TeX(value, unit=column_unit[cc],
+                                                    is_unit_plurial=FALSE,
+                                                    add_unit_space=TRUE,
+                                                    is_unit_zero=TRUE)
+                            
+                            if (value < 0) {
+                                color = Palette_hydro[1 + dColor]
+                            } else if (value > 0) {
+                                color = Palette_hydro[nColor_hydro - dColor]
+                            } else {
+                                color = IPCCgrey40
+                            }
+                            
+                            table = table +
+                                annotate("text",
+                                         x=xtmp - dx_column*0.3,
+                                         y=ytmp + dy_row/2,
+                                         label=latex2exp::TeX(valueC),
+                                         vjust=0.5, hjust=1,
+                                         size=3, family="Lato",
+                                         color=color)
                         }
-                        
-                        table = table +
-                            annotate("text",
-                                     x=xtmp - dx_column*0.7,
-                                     y=ytmp + dy_row/2,
-                                     label=latex2exp::TeX(valueC),
-                                     vjust=0.5, hjust=0,
-                                     size=3, family="Lato",
-                                     color=color)
-                    }                
+                    }
                 }
             }
             
@@ -2671,23 +2727,51 @@ sheet_projection_secteur = function (Stations,
 
 
             ### Foot _____________________________________________________________
-            foot_text = c("\\textbf{Avertissement} : Il ne s’agit pas de prévisions mais d’indications d’évolutions possibles. Ces fiches sont volontairement synthétiques et",
-                          "une notice d’accompagnement fournit des informations pour la lecture et l’interprétation des graphiques de cette fiche.")
+
+            foot_plan = matrix(c(
+                "Explore2", "content"
+            ), ncol=2, byrow=TRUE)
+
+            foot_Explore2_width = 0.12
+            foot_content_width = 1
+            
+            foot_herd = bring_grass(verbose=verbose)
+            foot_herd = plan_of_herd(foot_herd, foot_plan,
+                                     verbose=verbose)
+
+                        
+            Explore2_grob = grid::rasterGrob(png::readPNG(logo_info[["Explore2"]]["path"]),
+                                             vjust=0.57,
+                                             hjust=0.5,
+                                             height=0.9)
+            foot_herd = add_sheep(foot_herd,
+                                  sheep=Explore2_grob,
+                                  id="Explore2",
+                                  width=foot_Explore2_width,
+                                  verbose=verbose)
+            
+
+            foot_text = c("\\textbf{Avertissement} : Il ne s’agit pas de prévisions mais d’indications d’évolutions possibles. Ces fiches sont volontairement synthétiques",
+                          "et une notice d’accompagnement fournit des informations pour la lecture et l’interprétation des graphiques de cette fiche.")
             dy_newline = 0.36
             
-            foot = ggplot() + theme_void() +
+            content = ggplot() + theme_void() +
                 theme(plot.margin=margin(t=0, r=0,
                                          b=0, l=0, "mm")) +
                 scale_x_continuous(limits=c(0, 10),
                                    expand=c(0, 0)) +
                 scale_y_continuous(limits=c(0, 1),
-                                   expand=c(0, 0))
+                                   expand=c(0, 0)) +
+                annotate("line",
+                         x=c(0.15, 0.15), y=c(0, 0.62),
+                         linewidth=1.5,
+                         color=TRACClightblue)
 
             for (k in 1:length(foot_text)) {
-                foot = foot +             
+                content = content +             
                     annotate("text",
-                             x=0.01,
-                             y=0.7 - dy_newline*(k-1),
+                             x=0.25,
+                             y=0.61 - dy_newline*(k-1),
                              label=latex2exp::TeX(foot_text[k]),
                              size=2, hjust=0, vjust=1,
                              family="Raleway",
@@ -2696,17 +2780,24 @@ sheet_projection_secteur = function (Stations,
 
             foot_info = paste0("\\small{", format(Sys.Date(), "%B %Y"), "\\; - \\;}\\textbf{\\small{n°}", secteur$id, "}")
             
-            foot = foot +
+            content = content +
                 annotate("text",
                          x=9.98,
-                         y=0.5,
+                         y=0.15,
                          label=latex2exp::TeX(foot_info),
-                         size=3, hjust=1, vjust=0.5,
+                         size=3, hjust=1, vjust=0,
                          family="Raleway",
                          color=TRACCblue)            
 
+            foot_herd = add_sheep(foot_herd,
+                                  sheep=content,
+                                  id="content",
+                                  width=foot_content_width,
+                                  verbose=verbose)
+            
+            
             herd = add_sheep(herd,
-                             sheep=foot,
+                             sheep=foot_herd,
                              id="foot",
                              height=foot_height,
                              width=width,
