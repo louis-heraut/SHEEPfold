@@ -33,6 +33,7 @@ sheet_projection_secteur = function (Stations,
                                      # metaEX_serie_hydro,
                                      WL,
                                      NarraTRACC_selection,
+                                     NarraTRACC_order,
                                      # delta_prob=0,
                                      limit_conf_pct=80,
                                      icons=NULL,
@@ -271,6 +272,16 @@ sheet_projection_secteur = function (Stations,
             NarraTRACC_sh_name = gsub("RWL", "", unlist(NarraTRACC_sh[paste0("name_", 1:4)]))
             NarraTRACC_sh_description = unlist(NarraTRACC_sh[paste0("description_", 1:4)])
             NarraTRACC_sh_color = unlist(NarraTRACC_sh[paste0("color_", 1:4)])
+
+            NarraTRACC_order = order(match(gsub(".*[-]", "", NarraTRACC_sh_name), NarraTRACC_order))
+
+            NarraTRACC_sh_Chain = NarraTRACC_sh_Chain[NarraTRACC_order]
+            NarraTRACC_sh_climateChain = NarraTRACC_sh_climateChain[NarraTRACC_order]
+            NarraTRACC_sh_name = NarraTRACC_sh_name[NarraTRACC_order]
+            NarraTRACC_sh_description = NarraTRACC_sh_description[NarraTRACC_order]
+            NarraTRACC_sh_color = NarraTRACC_sh_color[NarraTRACC_order]
+                
+
             
             dataEX_criteria_climate_secteur_sh_wl = dplyr::filter(dataEX_criteria_climate_secteur,
                                                                SH==sh, GWL == wl["GWLclean"])
@@ -280,8 +291,8 @@ sheet_projection_secteur = function (Stations,
             
             dataEX_criteria_hydro_secteur_sh_wl = dplyr::filter(dataEX_criteria_hydro_secteur,
                                                              SH==sh, GWL == wl["GWLclean"])
-            dataEX_criteria_hydro_sh_wl = dplyr::filter(dataEX_criteria_hydro,
-                                                        SH==sh, GWL == wl["GWLclean"])
+            # dataEX_criteria_hydro_sh_wl = dplyr::filter(dataEX_criteria_hydro,
+                                                        # SH==sh, GWL == wl["GWLclean"])
 
             dataEX_criteria_hydro_secteur_stat_sh_wl = dplyr::filter(dataEX_criteria_hydro_secteur_stat,
                                                                   SH==sh, GWL==wl["GWLclean"])
@@ -296,6 +307,10 @@ sheet_projection_secteur = function (Stations,
                                                                   GWL==wl["GWLclean"])
             dataEX_criteria_recharge_secteur_stat_sh_wl = dplyr::filter(dataEX_criteria_recharge_secteur_stat,
                                                                         SH==sh, GWL==wl["GWLclean"])
+
+
+            NarraTRACC_sh_Chain_not_in = NarraTRACC_sh_Chain %in% dataEX_criteria_hydro_secteur_sh_wl$Chain
+            NarraTRACC_sh_name[!NarraTRACC_sh_Chain_not_in] = paste0(NarraTRACC_sh_name[!NarraTRACC_sh_Chain_not_in], "*")
             
             
             dataEX_serie_hydro_sh_wl = dataEX_serie_hydro
@@ -502,12 +517,19 @@ sheet_projection_secteur = function (Stations,
             dx_text = 0.02
 
             linewidth = 1.1
+
+
+            if (any(!NarraTRACC_sh_Chain_not_in)) {
+                label = "\\textbf{Narratifs hydrologiques (narraTRACCs)} \\; *\\small{non présent sur ce secteur hydrologique}"
+            } else {
+                label = "\\textbf{Narratifs hydrologiques (narraTRACCs)}"
+            }
             
             narratracc = narratracc +
                 annotate("text",
                          x=dx0,
                          y=dy0,
-                         label=latex2exp::TeX("\\textbf{Narratifs hydrologiques (narraTRACCs)}"),
+                         label=latex2exp::TeX(label),
                          size=2.2, hjust=0, vjust=1,
                          family="Lato",
                          color=IPCCgrey35)
