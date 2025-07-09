@@ -2442,8 +2442,8 @@ sheet_projection_secteur = function (Stations,
                 river_delta = river_delta +
                     theme(plot.margin=margin(t=4, r=2, b=1, l=1, "mm")) +
                     scale_x_date(expand=c(0, 0)) +
-                    scale_y_continuous(limits=c(-100, 100),
-                                       labels=get_labels_deltaQ,
+                    coord_cartesian(ylim=c(-100, 100)) +
+                    scale_y_continuous(labels=get_labels_deltaQ,
                                        expand=c(0, 0)) +
                     
                     geom_rect(data=dataEX_serie_hydro_deltaQMA_prob_wl_code,
@@ -2962,7 +2962,7 @@ sheet_projection_secteur = function (Stations,
             #                 width=paper_size[1],
             #                 height=paper_size[2], units='cm',
             #                 dpi=300,
-            #                 device=pdf)
+            #                  device=pdf)
 
 
             Cairo::CairoPDF(file=file.path(figdir, filename),
