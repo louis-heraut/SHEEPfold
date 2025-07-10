@@ -104,6 +104,13 @@ sheet_projection_secteur = function (Stations,
                                          "BC", "HM",
                                          sep="_", remove=FALSE)
 
+    # data = tidyr::unite(data,
+                        # "Chain",
+                        # "EXP", "GCM", "RCM",
+                        # "BC", "HM",
+                        # sep="_", remove=FALSE)
+
+
     hydro_criteria_cols = names(dataEX_criteria_hydro)[sapply(dataEX_criteria_hydro, is.numeric)]
     dataEX_criteria_hydro_secteur =
         dplyr::summarise(dplyr::group_by(dataEX_criteria_hydro,
@@ -236,7 +243,7 @@ sheet_projection_secteur = function (Stations,
                                        .names="max_{.col}"))
 
     
-    SH = unique(substr(Stations$code, 1, 2))
+    SH = unique(Stations$SH)
     nSH = length(SH) 
     
     nWL = length(WL)
@@ -249,7 +256,7 @@ sheet_projection_secteur = function (Stations,
         
         secteur = Secteurs[Secteurs$id_secteur == sh,]
         
-        Stations_sh = dplyr::filter(Stations, substr(code, 1, 2) == sh)
+        Stations_sh = dplyr::filter(Stations, SH == sh)
         
         secteurHydro_shp_mini = Shapefiles_mini$secteurHydro[Shapefiles_mini$secteurHydro$CdSecteurH == sh,]
         secteurHydro_shp = Shapefiles$secteurHydro[Shapefiles$secteurHydro$CdSecteurH == sh,]
@@ -1411,7 +1418,7 @@ sheet_projection_secteur = function (Stations,
             hydroMap_variable_width = 1
             hydroMap_colorbar_width = 0.3
 
-            lim_nchar_newline = 50
+            lim_nchar_newline = 49
             dy_title_newline = 0.4
             
             alpha = 0.6
@@ -1520,7 +1527,8 @@ sheet_projection_secteur = function (Stations,
 
 
 #### etiage __________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") \\textbf{VCN10} - Changements relatifs de l'intensité des étiages (%)")
+            Lines = c(paste0("(", letters[id_letter], ") \\textbf{VCN10$_{$Été}} - Changements"),
+                      "relatifs des débits d'étiage (%)")
             id_letter = id_letter + 1
 
             title = ggplot() + theme_void() +
@@ -1531,7 +1539,6 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0))
 
-            Lines = strwrap(title_text, lim_nchar_newline)
             nLines = length(Lines)
             
             for (ll in 1:nLines) {
@@ -1553,10 +1560,10 @@ sheet_projection_secteur = function (Stations,
 
             dataEX_criteria_hydro_plot_sh_wl =
                 dplyr::left_join(dplyr::select(dataEX_criteria_hydro_mean_sh_wl,
-                                               code, deltaVCN10),
+                                               code, deltaVCN10_summer),
                                  dplyr::select(dataEX_criteria_hydro_conf_sh_wl,
-                                               code, deltaVCN10_above_pct,
-                                               deltaVCN10_below_pct),
+                                               code, deltaVCN10_summer_above_pct,
+                                               deltaVCN10_summer_below_pct),
                                  by="code")
             dataEX_criteria_hydro_plot_sh_wl =
                 dplyr::left_join(dataEX_criteria_hydro_plot_sh_wl,
@@ -1567,15 +1574,15 @@ sheet_projection_secteur = function (Stations,
             dataEX_criteria_hydro_plot_sh_wl$shape = 21 #o
             dataEX_criteria_hydro_plot_sh_wl$size = 1.4
 
-            Ok_above = dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_above_pct >= limit_conf_pct
+            Ok_above = dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_summer_above_pct >= limit_conf_pct
             dataEX_criteria_hydro_plot_sh_wl$shape[Ok_above] = 24 #^
             dataEX_criteria_hydro_plot_sh_wl$size[Ok_above] = 2
             
-            Ok_below = dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_below_pct >= limit_conf_pct
+            Ok_below = dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_summer_below_pct >= limit_conf_pct
             dataEX_criteria_hydro_plot_sh_wl$shape[Ok_below] = 25 #v
             dataEX_criteria_hydro_plot_sh_wl$size[Ok_below] = 2
             
-            res = get_colors(dataEX_criteria_hydro_plot_sh_wl$deltaVCN10,
+            res = get_colors(dataEX_criteria_hydro_plot_sh_wl$deltaVCN10_summer,
                               upBin=Palette_bin$upBin,
                               lowBin=Palette_bin$lowBin,
                               Palette=Palette_hydro,
@@ -1624,7 +1631,8 @@ sheet_projection_secteur = function (Stations,
                                       verbose=verbose)
 
 #### recharge ________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") \\textbf{Recharge$_{$annuelle}} - Changements relatifs de la recharge annuelle (%)")
+            Lines = c(paste0("(", letters[id_letter], ") \\textbf{Recharge$_{$annuelle}} - Changements"),
+                      "relatifs de la recharge annuelle (%)")
             id_letter = id_letter + 1
 
             title = ggplot() + theme_void() +
@@ -1635,7 +1643,6 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0))
 
-            Lines = strwrap(title_text, lim_nchar_newline)
             nLines = length(Lines)
             
             for (ll in 1:nLines) {
@@ -1747,7 +1754,8 @@ sheet_projection_secteur = function (Stations,
                                       verbose=verbose)
 
 #### crue ____________________________________________________________
-            title_text = paste0("(", letters[id_letter], ") \\textbf{QJXA} - Changements relatifs de l'intensité des crues (%)")
+            Lines = c(paste0("(", letters[id_letter], ") \\textbf{QJXA} - Changements relatifs"),
+                      "des débits de crue (%)")
             id_letter = id_letter + 1
 
             title = ggplot() + theme_void() +
@@ -1758,7 +1766,6 @@ sheet_projection_secteur = function (Stations,
                 scale_y_continuous(limits=c(0, 1),
                                    expand=c(0, 0))
 
-            Lines = strwrap(title_text, lim_nchar_newline)
             nLines = length(Lines)
             
             for (ll in 1:nLines) {
@@ -2375,6 +2382,9 @@ sheet_projection_secteur = function (Stations,
                                          label=paste0("align_", k),
                                          verbose=verbose)
 
+
+
+                
                 date_axis = unique(dataEX_serie_hydro_sh_wl_code$deltaQMA$date)
                 date_axis_lim = c(min(date_axis)-days_span_mean, max(date_axis)+days_span_mean)
 
@@ -2400,6 +2410,15 @@ sheet_projection_secteur = function (Stations,
                                                   date),
                                   min_deltaQMA=max(c(0, min_deltaQMA)))
 
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove$arrow = ""
+                Ok = dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove$max_deltaQMA > 100
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove$arrow[Ok] =
+                    "arrow_upward_alt"
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow$arrow = ""
+                Ok = dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow$min_deltaQMA < -100
+                dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow$arrow[Ok] =
+                    "arrow_downward_alt"
+
                 dataEX_serie_hydro_sh_wl_code_narratracc =
                     dplyr::filter(dataEX_serie_hydro_sh_wl_code$deltaQMA,
                                   Chain %in% NarraTRACC_sh_Chain)
@@ -2411,7 +2430,8 @@ sheet_projection_secteur = function (Stations,
                 }
 
                 if (is_MPI) {
-                    river_delta = ggplot() + coord_cartesian(clip="off") + 
+                    river_delta = ggplot() +
+                        # coord_cartesian(clip="off") + 
                         theme_IPCC(is_plot.background=TRUE,
                                    is_panel.grid.major.x=FALSE,
                                    is_panel.grid.major.y=TRUE,
@@ -2426,7 +2446,8 @@ sheet_projection_secteur = function (Stations,
                                    axis.text.y_margin=margin(r=1, unit="mm"))
                     
                 } else {
-                    river_delta = ggplot() + coord_cartesian(clip="off") + 
+                    river_delta = ggplot() +
+                        # coord_cartesian(clip="off") + 
                         theme_IPCC(is_plot.background=TRUE,
                                    is_panel.grid.major.x=FALSE,
                                    is_panel.grid.major.y=TRUE,
@@ -2531,6 +2552,24 @@ sheet_projection_secteur = function (Stations,
                              size=0.4,
                              shape=20) +
                     
+                    shadowtext::geom_shadowtext(
+                                    data=dataEX_serie_hydro_deltaQMA_prob_wl_code_maxAbove,
+                                    aes(x=date, y=97, label=arrow),
+                                    family="Material Symbols Rounded",
+                                    vjust=1, hjust=0.5,
+                                    size=2, color=IPCCgrey50,
+                                    bg.color=IPCCgrey97,
+                                    bg.r=0.1) +
+                    
+                    shadowtext::geom_shadowtext(
+                                    data=dataEX_serie_hydro_deltaQMA_prob_wl_code_minBelow,
+                                    aes(x=date, y=-97, label=arrow),
+                                    vjust=0, hjust=0.5,
+                                    family="Material Symbols Rounded",
+                                    size=2, color=IPCCgrey50,
+                                    bg.color=IPCCgrey97,
+                                    bg.r=0.1) + 
+
                     scale_color_identity()
                 
                         # annotate("line",
@@ -2622,9 +2661,9 @@ sheet_projection_secteur = function (Stations,
                                         verbose=verbose)
 
 #### table ___________________________________________________________            
-            column_id = c("", "deltaVCN10-5", "deltaQA", "deltaRecharge", "deltaQSA_DJF",
+            column_id = c("", "deltaVCN10-5_summer", "deltaQA", "deltaRecharge", "deltaQSA_DJF",
                           "deltaQSA_MAM", "deltaQSA_JJA", "deltaQSA_SON", "deltaQJXA-10")
-            column_name = c("", "VCN10-5_ans", "QA", "Recharge_ann.", "QS_Hiver",
+            column_name = c("", "VCN10-5_ans, Été", "QA", "Recharge_ann.", "QS_Hiver",
                             "QS_Printemps", "QS_Été", "QS_Automne", "QJXA-10_ans")
             column_icon = c("", "", "", "",
                             "mode_cool", "emoji_nature",
@@ -2789,6 +2828,10 @@ sheet_projection_secteur = function (Stations,
                         # print(value)                        
                         # print(row_id[rr])
                         # print(column_id[cc])
+                        # print(dataEX_criteria_hydro_secteur_stat_sh_wl)
+                        # print(names(dataEX_criteria_hydro_secteur_stat_sh_wl))
+                        # print(dataEX_criteria_hydro_secteur_sh_wl)
+                        # print(names(dataEX_criteria_hydro_secteur_sh_wl))
                         # print(dataEX_criteria_hydro_secteur_sh_wl$Chain)
 
                         if (!identical(value, numeric(0))) {
@@ -2813,6 +2856,7 @@ sheet_projection_secteur = function (Stations,
                             vjust = 0.95
                             hjust = 2
                         }
+                        # print("bb")
 
                         table = table +
                             annotate("text",
