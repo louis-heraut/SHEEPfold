@@ -254,7 +254,7 @@ sheet_projection_secteur = function (Stations,
             print(paste0(i, "/", nSH, " so ", round(i/nSH*100, 1), "% done -> ", sh))
         }
         
-        secteur = Secteurs[Secteurs$id_secteur == sh,]
+        secteur = Secteurs[Secteurs$secteur_id == sh,]
         
         Stations_sh = dplyr::filter(Stations, SH == sh)
         
@@ -278,6 +278,8 @@ sheet_projection_secteur = function (Stations,
             NarraTRACC_sh_name = gsub("RWL", "", unlist(NarraTRACC_sh[paste0("name_", 1:4)]))
             NarraTRACC_sh_description = unlist(NarraTRACC_sh[paste0("description_", 1:4)])
             NarraTRACC_sh_color = unlist(NarraTRACC_sh[paste0("color_", 1:4)])
+
+            NarraTRACC_sh_name[is.na(NarraTRACC_sh_name)] = "—"
 
 
             NarraTRACC_sh_name_cut = gsub(".*[-]", "", NarraTRACC_sh_name)
@@ -318,8 +320,12 @@ sheet_projection_secteur = function (Stations,
                                                                         SH==sh, GWL==wl["GWLclean"])
 
 
-            NarraTRACC_sh_Chain_not_in = NarraTRACC_sh_Chain %in% dataEX_criteria_hydro_secteur_sh_wl$Chain
-            NarraTRACC_sh_name[!NarraTRACC_sh_Chain_not_in] = paste0(NarraTRACC_sh_name[!NarraTRACC_sh_Chain_not_in], "\\textbf{*}")
+            NarraTRACC_sh_Chain_not_in =
+                !(NarraTRACC_sh_Chain %in% dataEX_criteria_hydro_secteur_sh_wl$Chain) &
+                nchar(NarraTRACC_sh_description) != 0
+
+            
+            NarraTRACC_sh_name[NarraTRACC_sh_Chain_not_in] = paste0(NarraTRACC_sh_name[NarraTRACC_sh_Chain_not_in], "\\textbf{*}")
             
             
             dataEX_serie_hydro_sh_wl = dataEX_serie_hydro
@@ -454,7 +460,7 @@ sheet_projection_secteur = function (Stations,
             dy_region = 0.31
             dy_basin = 0.16
             
-            title_text = unlist(strsplit(paste0(sh, " - ", secteur$secteur_cut), "[ ][|][ ]"))
+            title_text = unlist(strsplit(paste0(sh, " - ", secteur$secteur_name_cut), "[ ][|][ ]"))
             nLine = length(title_text)
             title_text[1] = sub("[-] ", "- \\\\textbf{", title_text[1])
             title_text[1] = paste0(title_text[1], "}")
@@ -480,8 +486,8 @@ sheet_projection_secteur = function (Stations,
                              color=TRACCblue)
             }
 
-            region = paste0("\\textbf{Région hydrographique} \\; ", secteur$region)
-            basin = paste0("\\textbf{Bassin de gestion} \\; ", secteur$bassin)
+            region = paste0("\\textbf{Région hydrographique} \\; ", secteur$region_name)
+            basin = paste0("\\textbf{Bassin de gestion} \\; ", secteur$bassin_name)
             
             title = title +
                 annotate("text",
@@ -542,7 +548,13 @@ sheet_projection_secteur = function (Stations,
             
             for (k in 1:nNarraTRACC) {
                 y = dy0 - dy_title - dy_newline*(k-1)
-                label = paste0(NarraTRACC_sh_name[k], " : ", NarraTRACC_sh_description[k])
+
+                if (nchar(NarraTRACC_sh_description[k]) == 0) {
+                    label = NarraTRACC_sh_name[k]
+                } else {
+                    label = paste0(NarraTRACC_sh_name[k], " : ", NarraTRACC_sh_description[k])
+                }
+                
                 narratracc = narratracc +
                     annotate("line",
                              x=dx0 + dx_narratracc + c(0, dx_line),
@@ -559,7 +571,7 @@ sheet_projection_secteur = function (Stations,
                              color=IPCCgrey35)
             }
 
-            if (any(!NarraTRACC_sh_Chain_not_in)) {
+            if (any(NarraTRACC_sh_Chain_not_in)) {
                 label = "\\textbf{$_{$*}} \\tiny{: narratif non présent sur ce secteur hydrographique}"
                 narratracc = narratracc +
                     annotate("text",
@@ -1304,38 +1316,49 @@ sheet_projection_secteur = function (Stations,
                         # print(column_id[cc])
                         # print(dataEX_criteria_climate_secteur_sh_wl)
                         # print("bb")
-                        
-                        if (grepl("T", column_name[cc])) {
-                            value = format_value(value, 1)
-                            Palette_tmp = Palette_temperature
-                            nColor_tmp = nColor_temperature
-                            digits = 1
-                        } else if (grepl("P", column_name[cc])) {
-                            value = format_value(value, 0)
-                            Palette_tmp = Palette_hydro
-                            nColor_tmp = nColor_hydro
-                            digits = NULL
-                        }
-                        valueC = get_labels_TeX(value, unit=column_unit[cc],
-                                                is_unit_plurial=FALSE,
-                                                add_unit_space=TRUE,
-                                                is_unit_zero=TRUE,
-                                                digits=digits)
 
-                        if (value < 0) {
-                            color = Palette_tmp[1 + dColor]
-                        } else if (value > 0) {
-                            color = Palette_tmp[nColor_tmp - dColor]
+                        if (!identical(value, numeric(0))) {
+                            
+                            if (grepl("T", column_name[cc])) {
+                                value = format_value(value, 1)
+                                Palette_tmp = Palette_temperature
+                                nColor_tmp = nColor_temperature
+                                digits = 1
+                            } else if (grepl("P", column_name[cc])) {
+                                value = format_value(value, 0)
+                                Palette_tmp = Palette_hydro
+                                nColor_tmp = nColor_hydro
+                                digits = NULL
+                            }
+                            valueC = get_labels_TeX(value, unit=column_unit[cc],
+                                                    is_unit_plurial=FALSE,
+                                                    add_unit_space=TRUE,
+                                                    is_unit_zero=TRUE,
+                                                    digits=digits)
+
+                            if (value < 0) {
+                                color = Palette_tmp[1 + dColor]
+                            } else if (value > 0) {
+                                color = Palette_tmp[nColor_tmp - dColor]
+                            } else {
+                                color = IPCCgrey50
+                            }
+                            vjust = 0.5
+                            hjust = 1
                         } else {
-                            color = IPCCgrey50
+                            valueC = "—"
+                            color = IPCCgrey40
+                            vjust = 0.95
+                            hjust = 2
                         }
+                        
 
                         table = table +
                             annotate("text",
                                      x=xtmp - dx_column*0.3,
                                      y=ytmp + dy_row/2,
                                      label=latex2exp::TeX(valueC),
-                                     vjust=0.5, hjust=1,
+                                     vjust=vjust, hjust=hjust,
                                      size=3, family="Lato",
                                      color=color)
                     }                
@@ -2940,7 +2963,7 @@ sheet_projection_secteur = function (Stations,
             }
 
             foot_info = paste0("\\small{", format(Sys.Date(), "%B %Y"), "\\; - \\;}\\textbf{",
-                               gsub(".*[-]", "", wl["RWLclean"]), "-", secteur$id_secteur, "}")
+                               gsub(".*[-]", "", wl["RWLclean"]), "-", secteur$secteur_id, "}")
             
             content = content +
                 annotate("text",
